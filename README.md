@@ -2,15 +2,15 @@
 
 [English](README.en.md)
 
-![DualVibe Coding](docs/screenshots/mapping.png)
-
 ![Mac 好搭子，coding 好帮手](docs/overview/dualvibe-mac-mini-hero.png)
 
 ![少一点键鼠，多一点掌控](docs/overview/dualvibe-controller-workflow.png)
 
+![DualVibe Coding](docs/screenshots/mapping.png)
+
 **DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。**
 
-**触控板当鼠标，按键随你改，轮盘一键开。**
+**随手掌控，随心主动。你的下一个 coding 设备，何必是键鼠。**
 
 DualVibe Coding 是一款 macOS 应用，可以把 DualSense 变成鼠标、键盘、麦克风和启动器。它先让手柄输入马上能用，再把触控板手势、按键映射、快捷轮盘，以及每个 App 自己的方案连在一起。
 

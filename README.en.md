@@ -10,7 +10,7 @@
 
 **DualVibe Coding: a Mac buddy, a coding helper, and smoother to use.**
 
-**Touchpad as a mouse. Buttons you can remap. A wheel that opens apps.**
+**Control at hand, act as you please. Your next coding device doesn't have to be a keyboard and mouse.**
 
 DualVibe Coding is a macOS app that turns a DualSense into a mouse, keyboard, microphone, and launcher. It starts by making controller input immediately usable, then connects touchpad gestures, button mappings, a radial launcher, and per-app setups.
 
