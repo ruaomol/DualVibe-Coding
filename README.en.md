@@ -2,11 +2,30 @@
 
 [中文](README.md)
 
-![Mac companion and coding helper](docs/overview/dualvibe-mac-mini-hero.png)
+<p align="center">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/github/v/release/ruaomol/DualVibe-Coding?display_name=tag&sort=semver&label=release" alt="GitHub Release"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding"><img src="https://img.shields.io/github/last-commit/ruaomol/DualVibe-Coding?label=updated" alt="Last commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ruaomol/DualVibe-Coding" alt="MIT License"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/stargazers"><img src="https://img.shields.io/github/stars/ruaomol/DualVibe-Coding?style=social" alt="GitHub Stars"></a>
+</p>
 
-![Less keyboard and mouse, more control](docs/overview/dualvibe-controller-workflow.png)
+<p align="center">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases">Downloads and releases</a> ·
+  <a href="docs/DEMO.md">Demo flow</a> ·
+  <a href="https://github.com/ruaomol/DualVibe-Coding/issues">Report an issue</a>
+</p>
 
-![DualVibe Coding](docs/screenshots/mapping.png)
+<p align="center">
+  <img src="docs/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding makes your Mac easier to use" width="960">
+</p>
+
+<p align="center">
+  <img src="docs/overview/dualvibe-controller-workflow.png" alt="A DualSense workflow for controlling a Mac" width="960">
+</p>
+
+<p align="center">
+  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding feature overview" width="960">
+</p>
 
 **DualVibe Coding: a Mac buddy, a coding helper, and smoother to use.**
 
@@ -16,9 +35,37 @@ DualVibe Coding is a macOS app that turns a DualSense into a mouse, keyboard, mi
 
 DualVibe Coding is built natively with SwiftUI. It can connect more than one DualSense over Bluetooth or USB, and shows battery and charging status at a glance.
 
-![Controller and voice](docs/screenshots/controller-voice.png)
+## Video demo
+
+<p align="center">
+  <a href="docs/video/dualvibe-demo.mp4">
+    <img src="docs/video/dualvibe-demo-cover.jpg" alt="DualVibe Coding interface demo video cover" width="960">
+  </a>
+</p>
+
+<p align="center"><a href="docs/video/dualvibe-demo.mp4">Click the cover to watch the interface demo</a></p>
 
 ## DualVibe Coding, a Mac buddy
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/mapping.png" alt="Button mapping" width="280"><br>
+      <strong>Buttons you can remap</strong><br>
+      Give every app its own mapping
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/controller-voice.png" alt="Controller and voice" width="280"><br>
+      <strong>Touchpad as a mouse</strong><br>
+      Move, click, drag, and scroll
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/permissions.png" alt="Permission status" width="280"><br>
+      <strong>Permissions at a glance</strong><br>
+      Follow the prompts and get started
+    </td>
+  </tr>
+</table>
 
 ### Touchpad as a mouse
 
@@ -43,9 +90,21 @@ It also supports light, dark, or system appearance, and the window comes back as
 
 ## Install
 
-A `DualVibe-Coding-*.dmg` will be available from GitHub Releases. Open it and drag the app to Applications. The first time you launch it, go to the Permissions page, grant what macOS asks for, then come back and hit Recheck.
+Go to [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) for `DualVibe-Coding-*.dmg`. Open the disk image, drag the app to Applications, then open the **Permissions** page on first launch. Grant what macOS asks for and hit **Recheck**.
 
-![Permissions](docs/screenshots/permissions.png)
+<details>
+<summary><strong>Show first-launch and permission steps</strong></summary>
+
+1. Open the app's **Permissions** page and review Accessibility, Input Monitoring, and Microphone status.
+2. Click the button beside each missing permission and follow the macOS System Settings prompt.
+3. Return to DualVibe Coding, click **Recheck**, and confirm that the status is granted.
+4. Accessibility and Input Monitoring are enough for button mappings. Enable Microphone when you want voice input.
+
+</details>
+
+<p align="center">
+  <img src="docs/screenshots/permissions.png" alt="DualVibe Coding permission status" width="760">
+</p>
 
 ## Build from source
 
@@ -57,20 +116,22 @@ brew install opus
 
 Build outputs stay in local `.build/` and `dist/` folders, and they are not part of the public repo. The app keeps a stable bundle identifier and a persistent signing identity, so your macOS permission grants can survive updates.
 
-See [docs/DEMO.md](docs/DEMO.md) for the demo flow.
+See [docs/DEMO.md](docs/DEMO.md) for the demo flow. The interface demo is available at [docs/video/dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4).
 
-UI demo video: [dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4)
+## Privacy and sources
 
-## Sources
+This repository contains source code, build scripts, required third-party notices, and public documentation. Personal mappings, app paths, signing keys, build caches, screenshots, and test records stay out of the public repo.
 
-This project draws on [Agent Remote](https://github.com/AbhisekBasu1/agent-remote) for DualSense input and touchpad ideas, [remote-mic-app](https://github.com/HD838A/remote-mic-app) for the microphone approach, and [StarPie](https://github.com/Star-Pie/StarPie) for the controller wheel.
+The project draws on [Agent Remote](https://github.com/AbhisekBasu1/agent-remote) for DualSense input and touchpad ideas, [remote-mic-app](https://github.com/HD838A/remote-mic-app) for the microphone approach, and [StarPie](https://github.com/Star-Pie/StarPie) for the controller wheel.
 
 ## License
 
-DualVibe Coding is released under the MIT License. Third-party licenses and notices are bundled with the app and kept in `ThirdParty/AgentRemote`.
+DualVibe Coding is released under the [MIT License](LICENSE). Third-party licenses and notices are bundled with the app and kept in `ThirdParty/AgentRemote`.
 
 ## Community
 
 Questions, or just want to talk about how you use it? Join the DualVibe Coding group.
 
-![DualVibe Coding community QR code](docs/community/dualvibe-coding-group.jpg)
+<p align="center">
+  <img src="docs/community/dualvibe-coding-group.jpg" alt="DualVibe Coding community QR code" width="360">
+</p>

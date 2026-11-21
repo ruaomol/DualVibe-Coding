@@ -2,11 +2,30 @@
 
 [English](README.en.md)
 
-![Mac 好搭子，coding 好帮手](docs/overview/dualvibe-mac-mini-hero.png)
+<p align="center">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/github/v/release/ruaomol/DualVibe-Coding?display_name=tag&sort=semver&label=release" alt="GitHub Release"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding"><img src="https://img.shields.io/github/last-commit/ruaomol/DualVibe-Coding?label=updated" alt="Last commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ruaomol/DualVibe-Coding" alt="MIT License"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/stargazers"><img src="https://img.shields.io/github/stars/ruaomol/DualVibe-Coding?style=social" alt="GitHub Stars"></a>
+</p>
 
-![少一点键鼠，多一点掌控](docs/overview/dualvibe-controller-workflow.png)
+<p align="center">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases">下载与发布</a> ·
+  <a href="docs/DEMO.md">演示步骤</a> ·
+  <a href="https://github.com/ruaomol/DualVibe-Coding/issues">问题反馈</a>
+</p>
 
-![DualVibe Coding](docs/screenshots/mapping.png)
+<p align="center">
+  <img src="docs/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding，让 Mac 更顺手" width="960">
+</p>
+
+<p align="center">
+  <img src="docs/overview/dualvibe-controller-workflow.png" alt="DualSense 控制 Mac 的工作流" width="960">
+</p>
+
+<p align="center">
+  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
+</p>
 
 **DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。**
 
@@ -16,9 +35,37 @@ DualVibe Coding 是一款 macOS 应用，可以把 DualSense 变成鼠标、键�
 
 DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接多个 DualSense，电量和充电状态一眼能看到。
 
-![连接与语音](docs/screenshots/controller-voice.png)
+## 视频演示
+
+<p align="center">
+  <a href="docs/video/dualvibe-demo.mp4">
+    <img src="docs/video/dualvibe-demo-cover.jpg" alt="DualVibe Coding 界面演示视频封面" width="960">
+  </a>
+</p>
+
+<p align="center"><a href="docs/video/dualvibe-demo.mp4">点击封面观看界面演示视频</a></p>
 
 ## DualVibe Coding，Mac 好搭子
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/mapping.png" alt="按键映射" width="280"><br>
+      <strong>按键随你改</strong><br>
+      每个 App 都能有自己的一套映射
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/controller-voice.png" alt="连接与语音" width="280"><br>
+      <strong>触控板当鼠标</strong><br>
+      移动、点击、拖拽、滚动都能用
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/permissions.png" alt="权限状态" width="280"><br>
+      <strong>权限一眼看懂</strong><br>
+      按提示完成授权后马上开始
+    </td>
+  </tr>
+</table>
 
 ### 触控板当鼠标
 
@@ -26,7 +73,7 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 
 ### 按键随你改
 
-把按键映射成键盘、鼠标单击/双击/长按，或一套快捷键。每个 App 都能有自己的一套映射，冲突会标在对应位置上。
+把按键映射成键盘、鼠标单击、双击、长按，或一套快捷键。每个 App 都能有自己的一套映射，冲突会标在对应位置上。
 
 ### 轮盘一键开
 
@@ -43,9 +90,21 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 
 ## 安装
 
-之后会在 GitHub Releases 提供 `DualVibe-Coding-*.dmg`。下载打开后，把应用拖进「应用程序」即可。第一次打开先到「权限」页，按提示完成系统授权，回到应用再点「重新检查」。
+前往 [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) 获取 `DualVibe-Coding-*.dmg`。打开磁盘映像后，把应用拖进「应用程序」即可。首次打开时进入「权限」页，按提示完成系统授权，再点「重新检查」。
 
-![权限状态](docs/screenshots/permissions.png)
+<details>
+<summary><strong>展开查看首次启动与权限步骤</strong></summary>
+
+1. 打开应用的「权限」页，查看辅助功能、输入监控和麦克风状态。
+2. 点击缺失权限旁边的按钮，按 macOS 系统设置中的提示完成授权。
+3. 返回 DualVibe Coding，点击「重新检查」，确认状态变为已授权。
+4. 如果只使用按键映射，可以先授予辅助功能和输入监控。使用语音输入时，再打开麦克风权限。
+
+</details>
+
+<p align="center">
+  <img src="docs/screenshots/permissions.png" alt="DualVibe Coding 权限状态" width="760">
+</p>
 
 ## 从源码构建
 
@@ -57,11 +116,9 @@ brew install opus
 
 构建结果只会放在本地的 `.build/` 和 `dist/` 里，不会进公开仓库。应用使用固定的 Bundle Identifier 和长期有效的签名身份，所以升级之后，macOS 的辅助功能授权还可以继续用。
 
-演示步骤见 [docs/DEMO.md](docs/DEMO.md)。
+演示步骤见 [docs/DEMO.md](docs/DEMO.md)。界面演示视频见 [docs/video/dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4)。
 
-界面演示视频：[dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4)
-
-## 开源说明
+## 隐私与开源说明
 
 这个仓库只放源代码、构建脚本、必要的第三方声明和公开文档。你的个人映射、应用路径、签名密钥、构建缓存，以及过程中的截图和测试记录，都不会上传。
 
@@ -69,10 +126,12 @@ brew install opus
 
 ## 许可证
 
-DualVibe Coding 使用 MIT License。第三方组件的许可证和声明会随应用一起打包，也保存在 `ThirdParty/AgentRemote`。
+DualVibe Coding 使用 [MIT License](LICENSE)。第三方组件的许可证和声明会随应用一起打包，也保存在 `ThirdParty/AgentRemote`。
 
 ## 交流群
 
 有问题，或者想聊聊用法，欢迎加入 DualVibe Coding 交流群。
 
-![DualVibe Coding 交流群二维码](docs/community/dualvibe-coding-group.jpg)
+<p align="center">
+  <img src="docs/community/dualvibe-coding-group.jpg" alt="DualVibe Coding 交流群二维码" width="360">
+</p>
