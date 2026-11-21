@@ -32,20 +32,20 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 
 ## DualVibe Coding，Mac 好搭子
 
-### 触控板当鼠标
-
-移动、单击、双击、右键、拖拽、滚动，还可以切桌面。摇杆可以持续输出，和按键一起用，拖拽、按住会更稳。
-
-<p align="center">
-  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="触控板、指针与滚动设置" width="760">
-</p>
-
 ### 一套手柄，串起完整工作流
 
 连接手柄，选择映射，呼出轮盘，执行操作。DualVibe Coding 把按键、摇杆、触控板、麦克风和应用启动收进同一套工作流。
 
 <p align="center">
   <img src="docs/assets/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
+</p>
+
+### 触控板当鼠标
+
+移动、单击、双击、右键、拖拽、滚动，还可以切桌面。摇杆可以持续输出，和按键一起用，拖拽、按住会更稳。
+
+<p align="center">
+  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="触控板、指针与滚动设置" width="760">
 </p>
 
 ### 按键随你改

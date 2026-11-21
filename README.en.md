@@ -32,20 +32,20 @@ DualVibe Coding is built natively with SwiftUI. It can connect more than one Dua
 
 ## DualVibe Coding, a Mac buddy
 
-### Touchpad as a mouse
-
-Move the pointer, click, double-click, right-click, drag, scroll, and switch desktops. Stick output can stay continuous while you hold buttons, which makes dragging and holding more reliable.
-
-<p align="center">
-  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="Touchpad, pointer, and scrolling settings" width="760">
-</p>
-
 ### One controller, one complete workflow
 
 Connect the controller, choose a mapping, open the wheel, and send the action to the current app. DualVibe Coding keeps buttons, sticks, touchpad gestures, microphone input, and app launching in one workflow.
 
 <p align="center">
   <img src="docs/assets/overview/dualvibe-overview.png" alt="DualVibe Coding feature overview" width="960">
+</p>
+
+### Touchpad as a mouse
+
+Move the pointer, click, double-click, right-click, drag, scroll, and switch desktops. Stick output can stay continuous while you hold buttons, which makes dragging and holding more reliable.
+
+<p align="center">
+  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="Touchpad, pointer, and scrolling settings" width="760">
 </p>
 
 ### Buttons you can remap
