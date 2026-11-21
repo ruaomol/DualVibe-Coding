@@ -1,0 +1,9 @@
+.build/
+.local-signing/
+.DS_Store
+*.xcuserstate
+work/
+prototype-web/
+dist/
+DualVibe Coding.app/
+docs/generated/
