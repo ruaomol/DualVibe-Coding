@@ -2,30 +2,50 @@
 
 [中文](README.md)
 
-DualVibe Coding is a macOS-only DualSense workspace. It combines controller input, touchpad gestures, microphones, shortcuts, app launching, and per-app mappings in a native SwiftUI interface.
+![DualVibe Coding](docs/screenshots/mapping.png)
 
-## Features
+**DualVibe Coding: a Mac buddy, a coding helper, and a smoother desktop.**
 
-- Bluetooth or USB support for multiple DualSense controllers with battery and charging state.
-- Touchpad mouse movement, left/right click, double click, drag, scrolling, and desktop gestures.
-- Keyboard keys, mouse click/double-click/hold, recorded key combinations, and custom combo macros.
-- Continuous stick output works alongside physical button presses for reliable drag-and-hold workflows.
-- DualSense microphone support plus selection of another macOS microphone for speech input.
-- A controller-friendly radial launcher for apps, combo macros, and mapped actions.
-- Per-app mappings and full-window Finder drag-and-drop for `.app` files.
-- Light, dark, and system appearance modes.
-- Conflicts are marked directly on the affected mapping and the main window restores after reactivation.
+**Touchpad as a mouse. Buttons you can remap. A wheel that opens apps.**
 
-## Requirements
+DualVibe Coding is a macOS app that turns a DualSense into a mouse, keyboard, microphone, and launcher. It starts by making controller input immediately usable, then connects touchpad gestures, button mappings, a radial launcher, and per-app setups.
 
-- macOS 14 or newer
-- DualSense controller
-- Accessibility and Input Monitoring permissions for mouse, keyboard, touchpad, and shortcut output
-- Microphone permission for voice input
+DualVibe Coding is built natively with SwiftUI. It can connect more than one DualSense over Bluetooth or USB, and shows battery and charging status at a glance.
+
+![Controller and voice](docs/screenshots/controller-voice.png)
+
+## DualVibe Coding, a Mac buddy
+
+### Touchpad as a mouse
+
+Move the pointer, click, double-click, right-click, drag, scroll, and switch desktops. Stick output can stay continuous while you hold buttons, which makes dragging and holding more reliable.
+
+### Buttons you can remap
+
+Map buttons to keys, mouse clicks, holds, or shortcut combinations. Each app can have its own mappings, and conflicts show up right on the slot they affect.
+
+### A wheel that opens apps
+
+The radial launcher can open apps, run combos, or fire mapped actions. Steer it with the D-pad or a stick. Drag a `.app` from Finder straight into the app library.
+
+It also supports light, dark, or system appearance, and the window comes back as it was after you reactivate it.
+
+## What you need
+
+- macOS 14 or later
+- A DualSense controller
+- Accessibility and Input Monitoring permissions if you want mouse, keyboard, touchpad, or shortcut output
+- Microphone permission if you want voice input
+
+## AI-guided install
+
+The Chinese [AI installation guide](docs/AI-INSTALL.md) covers download, permissions, controller pairing, microphone selection, and verification.
 
 ## Install
 
-Download `DualVibe-Coding-*.dmg` from GitHub Releases, open it, and drag the app to Applications. On first launch, open the Permissions page, enable the requested macOS permissions, then return to the app and choose Recheck.
+A `DualVibe-Coding-*.dmg` will be available from GitHub Releases. Open it and drag the app to Applications. The first time you launch it, go to the Permissions page, grant what macOS asks for, then come back and hit Recheck.
+
+![Permissions](docs/screenshots/permissions.png)
 
 ## Build from source
 
@@ -35,15 +55,7 @@ brew install opus
 ./scripts/package-dmg.sh
 ```
 
-Build outputs stay in local `.build/` and `dist/` directories, which are excluded from the public repository. The app keeps a stable bundle identifier and persistent signing identity so macOS permissions can survive updates.
-
-## Screenshots
-
-![Key mappings](docs/screenshots/mapping.png)
-
-![Controller and voice](docs/screenshots/controller-voice.png)
-
-![Permissions](docs/screenshots/permissions.png)
+Build outputs stay in local `.build/` and `dist/` folders, and they are not part of the public repo. The app keeps a stable bundle identifier and a persistent signing identity, so your macOS permission grants can survive updates.
 
 See [docs/DEMO.md](docs/DEMO.md) for the demo flow.
 
@@ -51,14 +63,14 @@ UI demo video: [dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4)
 
 ## Sources
 
-The project incorporates ideas from [Agent Remote](https://github.com/AbhisekBasu1/agent-remote), [remote-mic-app](https://github.com/HD838A/remote-mic-app), and [StarPie](https://github.com/Star-Pie/StarPie). Their licenses and notices are preserved under `ThirdParty/AgentRemote`.
+This project draws on [Agent Remote](https://github.com/AbhisekBasu1/agent-remote) for DualSense input and touchpad ideas, [remote-mic-app](https://github.com/HD838A/remote-mic-app) for the microphone approach, and [StarPie](https://github.com/Star-Pie/StarPie) for the controller wheel.
 
 ## License
 
-DualVibe Coding is released under the MIT License.
+DualVibe Coding is released under the MIT License. Third-party licenses and notices are bundled with the app and kept in `ThirdParty/AgentRemote`.
 
 ## Community
 
-Join the DualVibe Coding group for discussion and feedback.
+Questions, or just want to talk about how you use it? Join the DualVibe Coding group.
 
 ![DualVibe Coding community QR code](docs/community/dualvibe-coding-group.jpg)
