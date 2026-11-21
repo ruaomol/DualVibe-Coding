@@ -66,6 +66,14 @@ It also supports light, dark, or system appearance, and the window comes back as
   <img src="docs/assets/screenshots/radial-launcher.png" alt="Radial launcher workflow" width="960">
 </p>
 
+### App library
+
+Drag the `.app` files you use into the app library. Each app can use an independent mapping or keep the global mapping. Search, add, and edit apps from one place.
+
+<p align="center">
+  <img src="docs/assets/screenshots/app-library.png" alt="DualVibe Coding app library" width="960">
+</p>
+
 ## What you need
 
 - macOS 14 or later

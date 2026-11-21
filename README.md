@@ -66,6 +66,14 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
   <img src="docs/assets/screenshots/radial-launcher.png" alt="快捷轮盘工作流" width="960">
 </p>
 
+### 应用库
+
+把常用 `.app` 拖进应用库，集中管理应用。每个 App 可以使用独立映射，也可以沿用全局映射。搜索、添加和编辑都在同一页完成。
+
+<p align="center">
+  <img src="docs/assets/screenshots/app-library.png" alt="DualVibe Coding 应用库" width="960">
+</p>
+
 ## 需要什么
 
 - macOS 14 或更高版本
