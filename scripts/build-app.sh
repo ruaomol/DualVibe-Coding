@@ -36,9 +36,12 @@ mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$CONTENTS/Frameworks" "$CONTEN
 cp "$PRODUCTS/PS5VibeCoding" "$CONTENTS/MacOS/PS5VibeCoding"
 cp "$PROJECT_DIR/AppBundle-template/Contents/Info.plist" "$CONTENTS/Info.plist"
 cp "$PROJECT_DIR/AppBundle-template/Contents/Resources/AppIcon.icns" "$CONTENTS/Resources/AppIcon.icns"
-RESOURCE_BUNDLE="$PRODUCTS/PS5VibeCoding_PS5VibeCodingApp.bundle"
+RESOURCE_BUNDLE="$PRODUCTS/DualVibeCoding_PS5VibeCodingApp.bundle"
+if [ ! -d "$RESOURCE_BUNDLE" ]; then
+    RESOURCE_BUNDLE="$PRODUCTS/PS5VibeCoding_PS5VibeCodingApp.bundle"
+fi
 if [ -d "$RESOURCE_BUNDLE" ]; then
-    ditto "$RESOURCE_BUNDLE" "$CONTENTS/Resources/PS5VibeCoding_PS5VibeCodingApp.bundle"
+    ditto "$RESOURCE_BUNDLE" "$CONTENTS/Resources/$(basename "$RESOURCE_BUNDLE")"
 fi
 
 cp -L "$OPUS_DYLIB" "$CONTENTS/Frameworks/libopus.0.dylib"
