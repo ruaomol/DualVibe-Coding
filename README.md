@@ -10,21 +10,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ruaomol/DualVibe-Coding/releases">下载与发布</a> ·
-  <a href="docs/DEMO.md">演示步骤</a> ·
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases">下载 DMG</a> ·
   <a href="https://github.com/ruaomol/DualVibe-Coding/issues">问题反馈</a>
 </p>
 
 <p align="center">
   <img src="docs/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding，让 Mac 更顺手" width="960">
-</p>
-
-<p align="center">
-  <img src="docs/overview/dualvibe-controller-workflow.png" alt="DualSense 控制 Mac 的工作流" width="960">
-</p>
-
-<p align="center">
-  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
 </p>
 
 **DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。**
@@ -35,51 +26,37 @@ DualVibe Coding 是一款 macOS 应用，可以把 DualSense 变成鼠标、键�
 
 DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接多个 DualSense，电量和充电状态一眼能看到。
 
-## 视频演示
-
 <p align="center">
-  <a href="docs/video/dualvibe-demo.mp4">
-    <img src="docs/video/dualvibe-demo-cover.jpg" alt="DualVibe Coding 界面演示视频封面" width="960">
-  </a>
+  <img src="docs/overview/dualvibe-controller-workflow.png" alt="DualSense 控制 Mac 的工作流" width="960">
 </p>
 
-<p align="center"><a href="docs/video/dualvibe-demo.mp4">点击封面观看界面演示视频</a></p>
-
 ## DualVibe Coding，Mac 好搭子
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="docs/screenshots/mapping.png" alt="按键映射" width="280"><br>
-      <strong>按键随你改</strong><br>
-      每个 App 都能有自己的一套映射
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/screenshots/controller-voice.png" alt="连接与语音" width="280"><br>
-      <strong>连接与语音</strong><br>
-      连接设备，管理语音输入
-    </td>
-    <td align="center" width="33%">
-      <img src="docs/screenshots/permissions.png" alt="权限状态" width="280"><br>
-      <strong>权限一眼看懂</strong><br>
-      按提示完成授权后马上开始
-    </td>
-  </tr>
-</table>
 
 ### 触控板当鼠标
 
 移动、单击、双击、右键、拖拽、滚动，还可以切桌面。摇杆可以持续输出，和按键一起用，拖拽、按住会更稳。
 
+<p align="center">
+  <img src="docs/screenshots/touchpad-mouse.png" alt="触控板、指针与滚动设置" width="760">
+</p>
+
 ### 按键随你改
 
 把按键映射成键盘、鼠标单击、双击、长按，或一套快捷键。每个 App 都能有自己的一套映射，冲突会标在对应位置上。
+
+<p align="center">
+  <img src="docs/screenshots/mapping.png" alt="DualSense 按键映射" width="760">
+</p>
 
 ### 轮盘一键开
 
 快捷轮盘能打开应用、跑组合键或执行映射动作，用方向键或摇杆就能选。应用库支持直接从访达把 `.app` 拖进来。
 
 也支持浅色、深色，或跟随系统。窗口重新激活后，状态会自动恢复。
+
+<p align="center">
+  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
+</p>
 
 ## 需要什么
 
@@ -88,9 +65,9 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 - 要用鼠标、键盘、触控板或快捷键时，请在系统设置里打开辅助功能和输入监控
 - 要用语音输入时，打开麦克风权限
 
-## 安装
+## 下载与安装
 
-应用发布后会在 [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) 提供 `DualVibe-Coding-*.dmg`。下载并打开磁盘映像后，把应用拖进「应用程序」即可。首次打开时进入「权限」页，按提示完成系统授权，再点「重新检查」。
+当前版本 [DualVibe Coding v0.1.0](https://github.com/ruaomol/DualVibe-Coding/releases/tag/v0.1.0) 提供 `DualVibe-Coding-0.1.0.dmg`。下载后打开磁盘映像，把 DualVibe Coding.app 拖进「应用程序」。首次打开时进入「权限」页，按提示完成系统授权，再点「重新检查」。
 
 <details>
 <summary><strong>展开查看首次启动与权限步骤</strong></summary>
@@ -114,9 +91,7 @@ brew install opus
 ./scripts/package-dmg.sh
 ```
 
-构建结果只会放在本地的 `.build/` 和 `dist/` 里，不会进公开仓库。应用使用固定的 Bundle Identifier 和长期有效的签名身份，所以升级之后，macOS 的辅助功能授权还可以继续用。
-
-演示步骤见 [docs/DEMO.md](docs/DEMO.md)。界面演示视频见 [docs/video/dualvibe-demo.mp4](docs/video/dualvibe-demo.mp4)。
+构建结果只会放在本地的 `.build/` 和 `dist/` 里。`scripts/package-dmg.sh` 会在 `dist/` 生成 `DualVibe-Coding-版本.dmg`，发布时将它上传到 GitHub Releases。应用使用固定的 Bundle Identifier 和长期有效的签名身份，所以升级之后，macOS 的辅助功能授权还可以继续用。
 
 ## 隐私与开源说明
 
