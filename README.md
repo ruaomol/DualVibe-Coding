@@ -14,11 +14,11 @@
   <a href="https://github.com/ruaomol/DualVibe-Coding/issues">问题反馈</a>
 </p>
 
-<p align="center">
-  <img src="docs/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding，让 Mac 更顺手" width="960">
-</p>
+<h2 align="center">DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。</h2>
 
-**DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。**
+<p align="center">
+  <img src="docs/assets/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding，让 Mac 更顺手" width="960">
+</p>
 
 **随手掌控，随心主动。你的下一个 coding 设备，何必是键鼠。**
 
@@ -27,7 +27,7 @@ DualVibe Coding 是一款 macOS 应用，可以把 DualSense 变成鼠标、键�
 DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接多个 DualSense，电量和充电状态一眼能看到。
 
 <p align="center">
-  <img src="docs/overview/dualvibe-controller-workflow.png" alt="DualSense 控制 Mac 的工作流" width="960">
+  <img src="docs/assets/overview/dualvibe-controller-workflow.png" alt="DualSense 控制 Mac 的工作流" width="960">
 </p>
 
 ## DualVibe Coding，Mac 好搭子
@@ -37,7 +37,15 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 移动、单击、双击、右键、拖拽、滚动，还可以切桌面。摇杆可以持续输出，和按键一起用，拖拽、按住会更稳。
 
 <p align="center">
-  <img src="docs/screenshots/touchpad-mouse.png" alt="触控板、指针与滚动设置" width="760">
+  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="触控板、指针与滚动设置" width="760">
+</p>
+
+### 一套手柄，串起完整工作流
+
+连接手柄，选择映射，呼出轮盘，执行操作。DualVibe Coding 把按键、摇杆、触控板、麦克风和应用启动收进同一套工作流。
+
+<p align="center">
+  <img src="docs/assets/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
 </p>
 
 ### 按键随你改
@@ -45,7 +53,7 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 把按键映射成键盘、鼠标单击、双击、长按，或一套快捷键。每个 App 都能有自己的一套映射，冲突会标在对应位置上。
 
 <p align="center">
-  <img src="docs/screenshots/mapping.png" alt="DualSense 按键映射" width="760">
+  <img src="docs/assets/screenshots/mapping.png" alt="DualSense 按键映射" width="760">
 </p>
 
 ### 轮盘一键开
@@ -55,7 +63,7 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 也支持浅色、深色，或跟随系统。窗口重新激活后，状态会自动恢复。
 
 <p align="center">
-  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding 功能概览" width="960">
+  <img src="docs/assets/screenshots/radial-launcher.png" alt="快捷轮盘工作流" width="960">
 </p>
 
 ## 需要什么
@@ -80,7 +88,7 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 </details>
 
 <p align="center">
-  <img src="docs/screenshots/permissions.png" alt="DualVibe Coding 权限状态" width="760">
+  <img src="docs/assets/screenshots/permissions.png" alt="DualVibe Coding 权限状态" width="760">
 </p>
 
 ## 从源码构建
@@ -108,5 +116,5 @@ DualVibe Coding 使用 [MIT License](LICENSE)。第三方组件的许可证和�
 有问题，或者想聊聊用法，欢迎加入 DualVibe Coding 交流群。
 
 <p align="center">
-  <img src="docs/community/dualvibe-coding-group.jpg" alt="DualVibe Coding 交流群二维码" width="360">
+  <img src="docs/assets/community/dualvibe-coding-group.jpg" alt="DualVibe Coding 交流群二维码" width="360">
 </p>

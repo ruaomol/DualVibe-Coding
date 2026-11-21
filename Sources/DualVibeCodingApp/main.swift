@@ -528,7 +528,7 @@ private struct PermissionRow: View {
 }
 
 @main
-struct PS5VibeCodingApp: App {
+struct DualVibeCodingApp: App {
     @NSApplicationDelegateAdaptor(DualVibeApplicationDelegate.self) private var appDelegate
     @StateObject private var store = ControllerStore()
     @StateObject private var ui = UIState()

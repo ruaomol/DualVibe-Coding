@@ -149,7 +149,7 @@ private enum BluetoothAudioError: LocalizedError {
 }
 
 private final class BluetoothAudioPipeline: @unchecked Sendable {
-    private let queue = DispatchQueue(label: "PS5VibeCoding.bluetooth-audio", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "DualVibeCoding.bluetooth-audio", qos: .userInitiated)
     private let output = VirtualMicrophonePCMOutput()
     private var decoder: BluetoothOpusDecoder?
     private var muted = false

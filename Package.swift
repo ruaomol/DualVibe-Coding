@@ -5,7 +5,7 @@ let package = Package(
     name: "DualVibeCoding",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "PS5VibeCoding", targets: ["PS5VibeCodingApp"])
+        .executable(name: "DualVibeCoding", targets: ["DualVibeCodingApp"])
     ],
     targets: [
         .target(name: "CSonic", path: "ThirdParty/AgentRemote/CSonic"),
@@ -15,9 +15,9 @@ let package = Package(
             path: "ThirdParty/AgentRemote/Sources"
         ),
         .executableTarget(
-            name: "PS5VibeCodingApp",
+            name: "DualVibeCodingApp",
             dependencies: ["AgentRemoteBridge"],
-            path: "Sources/PS5VibeCodingApp",
+            path: "Sources/DualVibeCodingApp",
             resources: [.process("Resources")]
         )
     ]

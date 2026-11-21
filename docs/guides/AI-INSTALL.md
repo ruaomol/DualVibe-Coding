@@ -82,4 +82,4 @@
 - 最后告诉我 DualVibe Coding 版本、Mac 芯片和系统版本、DualSense 连接方式、电量、当前麦克风、权限状态、实际出字是否成功，以及还有哪些步骤未完成。
 ```
 
-手动安装和首次使用见 [README](../README.md) 与 [docs/DEMO.md](DEMO.md)。
+手动安装和首次使用见 [README](../../README.md) 与 [docs/DEMO.md](DEMO.md)。

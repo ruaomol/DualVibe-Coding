@@ -6,9 +6,9 @@ umask 077
 PROJECT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 SIGNING_DIR="$PROJECT_DIR/.local-signing"
 IDENTITY_DIR="$SIGNING_DIR/identity"
-KEYCHAIN_NAME=PS5VibeCoding.keychain-db
+KEYCHAIN_NAME=DualVibeCoding.keychain-db
 KEYCHAIN="$IDENTITY_DIR/$KEYCHAIN_NAME"
-IDENTITY_NAME='PS5 Vibe Coding Local Code Signing'
+IDENTITY_NAME='DualVibe Coding Local Code Signing'
 SETUP_LOCK="$SIGNING_DIR/setup.lock"
 SETUP_STAGE=''
 

@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 PROJECT_ROOT="${0:A:h:h}"
-BUILD_ROOT="$PROJECT_ROOT/.build/agent-remote-driver"
+BUILD_ROOT="$PROJECT_ROOT/.build/driver"
 DRIVER_PATH="$BUILD_ROOT/DualSenseBridgeMic.driver"
 CONTENTS_PATH="$DRIVER_PATH/Contents"
 MACOS_PATH="$CONTENTS_PATH/MacOS"

@@ -14,11 +14,11 @@
   <a href="https://github.com/ruaomol/DualVibe-Coding/issues">Report an issue</a>
 </p>
 
-<p align="center">
-  <img src="docs/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding makes your Mac easier to use" width="960">
-</p>
+<h2 align="center">DualVibe Coding: a Mac buddy, a coding helper, and smoother to use.</h2>
 
-**DualVibe Coding: a Mac buddy, a coding helper, and smoother to use.**
+<p align="center">
+  <img src="docs/assets/overview/dualvibe-mac-mini-hero.png" alt="DualVibe Coding makes your Mac easier to use" width="960">
+</p>
 
 **Control at hand, act as you please. Your next coding device doesn't have to be a keyboard and mouse.**
 
@@ -27,7 +27,7 @@ DualVibe Coding is a macOS app that turns a DualSense into a mouse, keyboard, mi
 DualVibe Coding is built natively with SwiftUI. It can connect more than one DualSense over Bluetooth or USB, and shows battery and charging status at a glance.
 
 <p align="center">
-  <img src="docs/overview/dualvibe-controller-workflow.png" alt="A DualSense workflow for controlling a Mac" width="960">
+  <img src="docs/assets/overview/dualvibe-controller-workflow.png" alt="A DualSense workflow for controlling a Mac" width="960">
 </p>
 
 ## DualVibe Coding, a Mac buddy
@@ -37,7 +37,15 @@ DualVibe Coding is built natively with SwiftUI. It can connect more than one Dua
 Move the pointer, click, double-click, right-click, drag, scroll, and switch desktops. Stick output can stay continuous while you hold buttons, which makes dragging and holding more reliable.
 
 <p align="center">
-  <img src="docs/screenshots/touchpad-mouse.png" alt="Touchpad, pointer, and scrolling settings" width="760">
+  <img src="docs/assets/screenshots/touchpad-mouse.png" alt="Touchpad, pointer, and scrolling settings" width="760">
+</p>
+
+### One controller, one complete workflow
+
+Connect the controller, choose a mapping, open the wheel, and send the action to the current app. DualVibe Coding keeps buttons, sticks, touchpad gestures, microphone input, and app launching in one workflow.
+
+<p align="center">
+  <img src="docs/assets/overview/dualvibe-overview.png" alt="DualVibe Coding feature overview" width="960">
 </p>
 
 ### Buttons you can remap
@@ -45,7 +53,7 @@ Move the pointer, click, double-click, right-click, drag, scroll, and switch des
 Map buttons to keys, mouse clicks, holds, or shortcut combinations. Each app can have its own mappings, and conflicts show up right on the slot they affect.
 
 <p align="center">
-  <img src="docs/screenshots/mapping.png" alt="DualSense button mapping" width="760">
+  <img src="docs/assets/screenshots/mapping.png" alt="DualSense button mapping" width="760">
 </p>
 
 ### A wheel that opens apps
@@ -55,7 +63,7 @@ The radial launcher can open apps, run combos, or fire mapped actions. Steer it 
 It also supports light, dark, or system appearance, and the window comes back as it was after you reactivate it.
 
 <p align="center">
-  <img src="docs/overview/dualvibe-overview.png" alt="DualVibe Coding feature overview" width="960">
+  <img src="docs/assets/screenshots/radial-launcher.png" alt="Radial launcher workflow" width="960">
 </p>
 
 ## What you need
@@ -80,7 +88,7 @@ It also supports light, dark, or system appearance, and the window comes back as
 </details>
 
 <p align="center">
-  <img src="docs/screenshots/permissions.png" alt="DualVibe Coding permission status" width="760">
+  <img src="docs/assets/screenshots/permissions.png" alt="DualVibe Coding permission status" width="760">
 </p>
 
 ## Build from source
@@ -108,5 +116,5 @@ DualVibe Coding is released under the [MIT License](LICENSE). Third-party licens
 Questions, or just want to talk about how you use it? Join the DualVibe Coding group.
 
 <p align="center">
-  <img src="docs/community/dualvibe-coding-group.jpg" alt="DualVibe Coding community QR code" width="360">
+  <img src="docs/assets/community/dualvibe-coding-group.jpg" alt="DualVibe Coding community QR code" width="360">
 </p>
