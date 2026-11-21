@@ -4,7 +4,11 @@
 
 ![DualVibe Coding](docs/screenshots/mapping.png)
 
-**DualVibe Coding，Mac 好搭子，Coding 好帮手，桌面更顺手。**
+![Mac 好搭子，coding 好帮手](docs/overview/dualvibe-mac-mini-hero.png)
+
+![少一点键鼠，多一点掌控](docs/overview/dualvibe-controller-workflow.png)
+
+**DualVibe Coding，Mac 好搭子，Coding 好帮手，操作更顺手。**
 
 **触控板当鼠标，按键随你改，轮盘一键开。**
 
@@ -36,10 +40,6 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 - DualSense 手柄
 - 要用鼠标、键盘、触控板或快捷键时，请在系统设置里打开辅助功能和输入监控
 - 要用语音输入时，打开麦克风权限
-
-## AI 一键安装
-
-不熟悉 macOS 设置时，可以复制 [AI 一键安装向导](docs/AI-INSTALL.md) 给聊天型或可操作电脑的 AI 助手。
 
 ## 安装
 

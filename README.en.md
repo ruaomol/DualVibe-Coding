@@ -2,9 +2,13 @@
 
 [中文](README.md)
 
+![Mac companion and coding helper](docs/overview/dualvibe-mac-mini-hero.png)
+
+![Less keyboard and mouse, more control](docs/overview/dualvibe-controller-workflow.png)
+
 ![DualVibe Coding](docs/screenshots/mapping.png)
 
-**DualVibe Coding: a Mac buddy, a coding helper, and a smoother desktop.**
+**DualVibe Coding: a Mac buddy, a coding helper, and smoother to use.**
 
 **Touchpad as a mouse. Buttons you can remap. A wheel that opens apps.**
 
@@ -36,10 +40,6 @@ It also supports light, dark, or system appearance, and the window comes back as
 - A DualSense controller
 - Accessibility and Input Monitoring permissions if you want mouse, keyboard, touchpad, or shortcut output
 - Microphone permission if you want voice input
-
-## AI-guided install
-
-The Chinese [AI installation guide](docs/AI-INSTALL.md) covers download, permissions, controller pairing, microphone selection, and verification.
 
 ## Install
 
