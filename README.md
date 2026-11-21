@@ -3,7 +3,7 @@
 [English](README.en.md)
 
 <p align="center">
-  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/github/v/release/ruaomol/DualVibe-Coding?display_name=tag&sort=semver&label=release" alt="GitHub Release"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/badge/macOS-14%2B-111827" alt="macOS 14 or later"></a>
   <a href="https://github.com/ruaomol/DualVibe-Coding"><img src="https://img.shields.io/github/last-commit/ruaomol/DualVibe-Coding?label=updated" alt="Last commit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ruaomol/DualVibe-Coding" alt="MIT License"></a>
   <a href="https://github.com/ruaomol/DualVibe-Coding/stargazers"><img src="https://img.shields.io/github/stars/ruaomol/DualVibe-Coding?style=social" alt="GitHub Stars"></a>
@@ -56,8 +56,8 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
     </td>
     <td align="center" width="33%">
       <img src="docs/screenshots/controller-voice.png" alt="连接与语音" width="280"><br>
-      <strong>触控板当鼠标</strong><br>
-      移动、点击、拖拽、滚动都能用
+      <strong>连接与语音</strong><br>
+      连接设备，管理语音输入
     </td>
     <td align="center" width="33%">
       <img src="docs/screenshots/permissions.png" alt="权限状态" width="280"><br>
@@ -90,7 +90,7 @@ DualVibe Coding 使用 SwiftUI 原生开发，支持蓝牙或 USB 同时连接�
 
 ## 安装
 
-前往 [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) 获取 `DualVibe-Coding-*.dmg`。打开磁盘映像后，把应用拖进「应用程序」即可。首次打开时进入「权限」页，按提示完成系统授权，再点「重新检查」。
+应用发布后会在 [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) 提供 `DualVibe-Coding-*.dmg`。下载并打开磁盘映像后，把应用拖进「应用程序」即可。首次打开时进入「权限」页，按提示完成系统授权，再点「重新检查」。
 
 <details>
 <summary><strong>展开查看首次启动与权限步骤</strong></summary>

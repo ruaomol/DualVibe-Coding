@@ -3,7 +3,7 @@
 [中文](README.md)
 
 <p align="center">
-  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/github/v/release/ruaomol/DualVibe-Coding?display_name=tag&sort=semver&label=release" alt="GitHub Release"></a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases"><img src="https://img.shields.io/badge/macOS-14%2B-111827" alt="macOS 14 or later"></a>
   <a href="https://github.com/ruaomol/DualVibe-Coding"><img src="https://img.shields.io/github/last-commit/ruaomol/DualVibe-Coding?label=updated" alt="Last commit"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/ruaomol/DualVibe-Coding" alt="MIT License"></a>
   <a href="https://github.com/ruaomol/DualVibe-Coding/stargazers"><img src="https://img.shields.io/github/stars/ruaomol/DualVibe-Coding?style=social" alt="GitHub Stars"></a>
@@ -56,8 +56,8 @@ DualVibe Coding is built natively with SwiftUI. It can connect more than one Dua
     </td>
     <td align="center" width="33%">
       <img src="docs/screenshots/controller-voice.png" alt="Controller and voice" width="280"><br>
-      <strong>Touchpad as a mouse</strong><br>
-      Move, click, drag, and scroll
+      <strong>Controller and voice</strong><br>
+      Connect devices and manage voice input
     </td>
     <td align="center" width="33%">
       <img src="docs/screenshots/permissions.png" alt="Permission status" width="280"><br>
@@ -90,7 +90,7 @@ It also supports light, dark, or system appearance, and the window comes back as
 
 ## Install
 
-Go to [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases) for `DualVibe-Coding-*.dmg`. Open the disk image, drag the app to Applications, then open the **Permissions** page on first launch. Grant what macOS asks for and hit **Recheck**.
+When a build is released, its `DualVibe-Coding-*.dmg` will be available from [GitHub Releases](https://github.com/ruaomol/DualVibe-Coding/releases). Open the disk image, drag the app to Applications, then open the **Permissions** page on first launch. Grant what macOS asks for and hit **Recheck**.
 
 <details>
 <summary><strong>Show first-launch and permission steps</strong></summary>
