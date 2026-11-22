@@ -62,6 +62,9 @@ if [ -n "$SIGNING_IDENTITY" ]; then
 else
     SIGNING_IDENTITY="$(/bin/sh "$PROJECT_DIR/scripts/setup-local-signing.sh")"
     KEYCHAIN="$PROJECT_DIR/.local-signing/identity/DualVibeCoding.keychain-db"
+    if [ ! -f "$KEYCHAIN" ] && [ -f "$PROJECT_DIR/.local-signing/identity/PS5VibeCoding.keychain-db" ]; then
+        KEYCHAIN="$PROJECT_DIR/.local-signing/identity/PS5VibeCoding.keychain-db"
+    fi
     BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$CONTENTS/Info.plist")"
     REQUIREMENT="identifier \"$BUNDLE_ID\" and certificate leaf = H\"$SIGNING_IDENTITY\""
     /usr/bin/codesign --force --timestamp=none --keychain "$KEYCHAIN" --sign "$SIGNING_IDENTITY" \

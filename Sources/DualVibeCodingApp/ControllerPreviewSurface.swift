@@ -42,7 +42,7 @@ struct PreviewLink: Equatable {
     func path(in height: CGFloat, lift: CGFloat) -> CGPath {
         let start = CGPoint(x: start.x, y: height - start.y)
         let end = CGPoint(x: end.x, y: height - end.y + lift)
-        let bend = min(88, abs(end.x - start.x) * 0.42) * (start.x < end.x ? 1 : -1)
+        let bend = min(92, abs(end.x - start.x) * 0.44) * (start.x < end.x ? 1 : -1)
         let path = CGMutablePath()
         path.move(to: start)
         path.addCurve(to: end, control1: CGPoint(x: start.x + bend, y: start.y),
@@ -69,9 +69,9 @@ struct ControllerPreviewSurface: NSViewRepresentable {
 }
 
 final class PreviewRenderView: NSView {
-    private static let floatingCycle: CFTimeInterval = 7.2
-    private static let lifts: [CGFloat] = (0...32).map {
-        1.2 * sin(CGFloat($0) / 32 * 2 * .pi)
+    private static let floatingCycle: CFTimeInterval = 7.6
+    private static let lifts: [CGFloat] = (0...36).map {
+        1.4 * sin(CGFloat($0) / 36 * 2 * .pi)
     }
 
     private let floatingLayer = CALayer()
@@ -79,15 +79,19 @@ final class PreviewRenderView: NSView {
     private let connectors = CALayer()
     private var panels: [ControllerFace: CALayer] = [:]
     private var outlines: [ControllerFace: CALayer] = [:]
+    private var hoverLayers: [ControllerFace: CAShapeLayer] = [:]
     private var face: ControllerFace = .front
     private var artworkRect = CGRect.zero
     private var hotspots: [ControllerFace: [PreviewHotspot]] = [:]
     private var links: [PreviewLink] = []
+    private var animatesTransitions = true
     private var onSelect: (String) -> Void = { _ in }
     private var floatingSince: CFTimeInterval?
     private var turning = false
     private var turnID = UUID()
     private var downID: String?
+    private var hoveredID: String?
+    private var trackingArea: NSTrackingArea?
     private var elements: [PreviewAccessibilityButton] = []
 
     init() {
@@ -97,7 +101,7 @@ final class PreviewRenderView: NSView {
         layer?.addSublayer(connectors)
         floatingLayer.addSublayer(rotor)
         var perspective = CATransform3DIdentity
-        perspective.m34 = -1 / 1100
+        perspective.m34 = -1 / 1050
         floatingLayer.sublayerTransform = perspective
         for side in ControllerFace.allCases {
             let panel = CALayer()
@@ -106,11 +110,20 @@ final class PreviewRenderView: NSView {
             panel.contentsGravity = .resize
             panel.minificationFilter = .trilinear
             panel.transform = CATransform3DMakeRotation(side.angle, 0, 1, 0)
+
+            let hoverLayer = CAShapeLayer()
+            hoverLayer.fillColor = NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+            hoverLayer.strokeColor = NSColor.controlAccentColor.withAlphaComponent(0.45).cgColor
+            hoverLayer.lineWidth = 1.4
+            hoverLayer.opacity = 0
+            panel.addSublayer(hoverLayer)
+
             let contourLayer = CALayer()
             panel.addSublayer(contourLayer)
             rotor.addSublayer(panel)
             panels[side] = panel
             outlines[side] = contourLayer
+            hoverLayers[side] = hoverLayer
         }
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
@@ -118,9 +131,23 @@ final class PreviewRenderView: NSView {
 
     required init?(coder: NSCoder) { nil }
 
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea { removeTrackingArea(trackingArea) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
     func configure(rect: CGRect, face next: ControllerFace, hotspots nextHotspots: [ControllerFace: [PreviewHotspot]],
                    links nextLinks: [PreviewLink], animatesTurn: Bool, floats: Bool, onSelect: @escaping (String) -> Void) {
         self.onSelect = onSelect
+        animatesTransitions = animatesTurn
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         let rectChanged = artworkRect != rect
@@ -133,10 +160,28 @@ final class PreviewRenderView: NSView {
         let wasFloating = floatingSince != nil
         if wasFloating != floats { setFloating(floats) }
         if rectChanged { positionArtwork() }
-        if rectChanged || contoursChanged { rebuildOutlines() }
+        if rectChanged || contoursChanged { rebuildOutlines(animate: animatesTurn && contoursChanged && !rectChanged) }
         if faceChanged || (!animatesTurn && turning) { turn(to: next, animated: animatesTurn) }
-        if rectChanged || linksChanged || wasFloating != floats { rebuildLinks() }
+        if rectChanged || linksChanged || wasFloating != floats {
+            rebuildLinks(animateDraw: animatesTurn && linksChanged && !rectChanged && !turning)
+        }
         if faceChanged || rectChanged || contoursChanged { rebuildAccessibility() }
+        if faceChanged { clearHover() }
+        CATransaction.commit()
+    }
+
+    func renderSnapshot(in ctx: CGContext) {
+        let hiddenFace: ControllerFace = face == .front ? .rear : .front
+        let hiddenPanel = panels[hiddenFace]
+        let prevHidden = hiddenPanel?.isHidden ?? false
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hiddenPanel?.isHidden = true
+        CATransaction.commit()
+        layer?.render(in: ctx)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hiddenPanel?.isHidden = prevHidden
         CATransaction.commit()
     }
 
@@ -145,7 +190,7 @@ final class PreviewRenderView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         positionArtwork()
-        rebuildLinks()
+        rebuildLinks(animateDraw: false)
         CATransaction.commit()
     }
 
@@ -153,7 +198,6 @@ final class PreviewRenderView: NSView {
         let size = artworkRect.size
         let frame = CGRect(x: artworkRect.minX, y: bounds.height - artworkRect.maxY,
                            width: size.width, height: size.height)
-        // Set bounds and position separately so the looping translation stays independent of layout.
         floatingLayer.bounds = CGRect(origin: .zero, size: size)
         floatingLayer.position = CGPoint(x: frame.midX, y: frame.midY)
         rotor.bounds = floatingLayer.bounds
@@ -162,11 +206,12 @@ final class PreviewRenderView: NSView {
             panel.bounds = rotor.bounds
             panel.position = CGPoint(x: rotor.bounds.midX, y: rotor.bounds.midY)
             outlines[side]?.frame = panel.bounds
+            hoverLayers[side]?.frame = panel.bounds
         }
         connectors.frame = bounds
     }
 
-    private func rebuildOutlines() {
+    private func rebuildOutlines(animate: Bool) {
         var flipped = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: artworkRect.height)
         for (side, layer) in outlines {
             layer.sublayers = (hotspots[side] ?? []).compactMap { hotspot in
@@ -174,24 +219,49 @@ final class PreviewRenderView: NSView {
                 let shape = CAShapeLayer()
                 shape.frame = layer.bounds
                 shape.path = hotspot.path.copy(using: &flipped)
-                shape.fillColor = tone.color.withAlphaComponent(0.15).cgColor
+                shape.fillColor = tone.color.withAlphaComponent(tone == .selected ? 0.16 : 0.14).cgColor
                 shape.strokeColor = tone.color.cgColor
-                shape.lineWidth = 2.1
+                shape.lineWidth = tone == .selected ? 2.2 : 1.9
+                shape.lineJoin = .round
+                shape.shadowColor = tone.color.cgColor
+                shape.shadowRadius = tone == .selected ? 7 : 5
+                shape.shadowOpacity = 0.55
+                shape.shadowOffset = .zero
+                if animate {
+                    let fade = CABasicAnimation(keyPath: "opacity")
+                    fade.fromValue = 0.25
+                    fade.toValue = 1
+                    fade.duration = 0.22
+                    fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    shape.add(fade, forKey: "appear")
+                }
                 return shape
             }
         }
     }
 
-    private func rebuildLinks() {
+    private func rebuildLinks(animateDraw: Bool) {
         connectors.sublayers = links.map { link in
             let shape = CAShapeLayer()
             shape.frame = connectors.bounds
             shape.path = link.path(in: bounds.height, lift: 0)
             shape.fillColor = nil
-            shape.strokeColor = link.tone.color.withAlphaComponent(link.tone == .selected ? 0.82 : 0.75).cgColor
-            shape.lineWidth = link.tone == .selected ? 1.8 : 1.4
+            shape.strokeColor = link.tone.color.withAlphaComponent(link.tone == .selected ? 0.88 : 0.78).cgColor
+            shape.lineWidth = link.tone == .selected ? 2.0 : 1.5
             shape.lineCap = .round
-            if link.tone == .active { shape.lineDashPattern = [3, 4] }
+            shape.shadowColor = link.tone.color.cgColor
+            shape.shadowRadius = link.tone == .selected ? 4 : 2
+            shape.shadowOpacity = 0.35
+            shape.shadowOffset = .zero
+            if link.tone == .active { shape.lineDashPattern = [4, 4] }
+            if animateDraw {
+                let draw = CABasicAnimation(keyPath: "strokeEnd")
+                draw.fromValue = 0
+                draw.toValue = 1
+                draw.duration = 0.26
+                draw.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1.0, 0.36, 1.0)
+                shape.add(draw, forKey: "draw")
+            }
             return shape
         }
         if let since = floatingSince {
@@ -233,6 +303,7 @@ final class PreviewRenderView: NSView {
         let id = UUID()
         turnID = id
         rotor.removeAnimation(forKey: "turn")
+        rotor.removeAnimation(forKey: "turnDepth")
         connectors.removeAnimation(forKey: "reveal")
         guard animated, abs(end - start) > 0.005 else {
             finishTurn()
@@ -240,17 +311,29 @@ final class PreviewRenderView: NSView {
         }
         turning = true
         connectors.opacity = 0
-        let turn = CABasicAnimation(keyPath: key)
-        turn.fromValue = start
-        turn.toValue = end
-        turn.duration = max(0.18, min(0.66, abs(end - start) / .pi * 0.66))
-        turn.timingFunction = CAMediaTimingFunction(controlPoints: 0.32, 0.06, 0.24, 1)
+
+        let spring = CASpringAnimation(keyPath: key)
+        spring.fromValue = start
+        spring.toValue = end
+        spring.mass = 1.0
+        spring.stiffness = 155
+        spring.damping = 21
+        spring.initialVelocity = 0.5
+        spring.duration = min(0.75, spring.settlingDuration)
+
+        let depth = CAKeyframeAnimation(keyPath: "transform.scale")
+        depth.values = [1.0, 0.935, 1.0]
+        depth.keyTimes = [0, 0.42, 1.0]
+        depth.duration = min(0.56, spring.duration)
+        depth.timingFunction = CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1.0)
+
         CATransaction.begin()
         CATransaction.setCompletionBlock { [weak self] in
             guard let self, self.turnID == id else { return }
             self.finishTurn(reveal: true)
         }
-        rotor.add(turn, forKey: "turn")
+        rotor.add(spring, forKey: "turn")
+        rotor.add(depth, forKey: "turnDepth")
         CATransaction.commit()
     }
 
@@ -262,7 +345,9 @@ final class PreviewRenderView: NSView {
         if reveal {
             let fade = CABasicAnimation(keyPath: "opacity")
             fade.fromValue = 0
-            fade.duration = 0.14
+            fade.toValue = 1
+            fade.duration = 0.18
+            fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
             connectors.add(fade, forKey: "reveal")
         }
         CATransaction.commit()
@@ -278,6 +363,50 @@ final class PreviewRenderView: NSView {
         guard !turning else { return nil }
         let local = CGPoint(x: point.x - artworkRect.minX, y: bounds.height - point.y - artworkRect.minY + renderedLift)
         return hotspots[face]?.reversed().first { $0.path.contains(local) }
+    }
+
+    private func updateHover(for event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        let match = hotspot(at: point)
+        let nextID = match?.id
+        guard nextID != hoveredID else { return }
+        hoveredID = nextID
+        guard let layer = hoverLayers[face] else { return }
+
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(animatesTransitions ? 0.16 : 0)
+        if let match, match.tone == nil {
+            var flipped = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: artworkRect.height)
+            layer.path = match.path.copy(using: &flipped)
+            layer.opacity = 1
+        } else {
+            layer.opacity = 0
+        }
+        CATransaction.commit()
+
+        if match != nil {
+            NSCursor.pointingHand.set()
+        } else {
+            NSCursor.arrow.set()
+        }
+    }
+
+    private func clearHover() {
+        guard hoveredID != nil else { return }
+        hoveredID = nil
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(animatesTransitions ? 0.14 : 0)
+        for layer in hoverLayers.values { layer.opacity = 0 }
+        CATransaction.commit()
+        NSCursor.arrow.set()
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        updateHover(for: event)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        clearHover()
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {

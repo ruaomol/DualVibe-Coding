@@ -9,6 +9,11 @@ IDENTITY_DIR="$SIGNING_DIR/identity"
 KEYCHAIN_NAME=DualVibeCoding.keychain-db
 KEYCHAIN="$IDENTITY_DIR/$KEYCHAIN_NAME"
 IDENTITY_NAME='DualVibe Coding Local Code Signing'
+if [ ! -f "$KEYCHAIN" ] && [ -f "$IDENTITY_DIR/PS5VibeCoding.keychain-db" ]; then
+    KEYCHAIN_NAME=PS5VibeCoding.keychain-db
+    KEYCHAIN="$IDENTITY_DIR/$KEYCHAIN_NAME"
+    IDENTITY_NAME='PS5 Vibe Coding Local Code Signing'
+fi
 SETUP_LOCK="$SIGNING_DIR/setup.lock"
 SETUP_STAGE=''
 

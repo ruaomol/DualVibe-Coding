@@ -46,7 +46,7 @@ final class FloatingLauncherController: NSObject, NSWindowDelegate {
             case .mapping: enabled = slot.binding.map(store.canRunLauncherAction) ?? false
             }
             return LauncherWheelEntry(slot: slot, application: application,
-                                      title: slot.displayTitle(applications: launcher.applications, combos: store.combos),
+                                      title: slot.localizedDisplayTitle(applications: launcher.applications, combos: store.combos),
                                       symbol: slot.symbolName, icon: url.map { NSWorkspace.shared.icon(forFile: $0.path) },
                                       enabled: enabled)
         }
@@ -132,7 +132,7 @@ final class FloatingLauncherController: NSObject, NSWindowDelegate {
             DispatchQueue.main.async { [weak self, weak window] in
                 guard let self, let window, self.panel === window, !self.isClosing else { return }
                 let motion: Animation? = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-                    ? nil : .spring(duration: 0.29, bounce: 0.12)
+                    ? nil : DualVibeMotion.wheelPresent
                 withAnimation(motion) { selection.isPresented = true }
             }
         } else {
@@ -157,7 +157,7 @@ final class FloatingLauncherController: NSObject, NSWindowDelegate {
         eventMonitors.removeAll()
 
         let motion: Animation? = selection.isPresented && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-            ? .easeInOut(duration: 0.16) : nil
+            ? DualVibeMotion.wheelDismiss : nil
         withAnimation(motion, completionCriteria: .removed) {
             selection.isPresented = false
         } completion: { [weak self] in
@@ -238,6 +238,7 @@ private final class LauncherWheelSelection: ObservableObject {
     let entries: [LauncherWheelEntry]
     @Published var isPresented = false
     @Published private(set) var selected: Int?
+    @Published private(set) var indicatorAngle: Double = 0
     private var lastAim: Int?
 
     init(entries: [LauncherWheelEntry]) { self.entries = entries }
@@ -266,7 +267,15 @@ private final class LauncherWheelSelection: ObservableObject {
     }
 
     func select(_ id: Int) {
-        if selected != id { selected = id }
+        guard selected != id else { return }
+        let target = LauncherWheelGeometry.angle(id)
+        if selected == nil {
+            indicatorAngle = target
+        } else {
+            let delta = atan2(sin(target - indicatorAngle), cos(target - indicatorAngle))
+            indicatorAngle += delta
+        }
+        selected = id
     }
 }
 
@@ -279,7 +288,7 @@ private struct LauncherWheelView: View {
     let cancel: () -> Void
 
     private var activeInk: Color {
-        colorScheme == .dark ? Color(red: 0.69, green: 0.86, blue: 1) : Color(red: 0.07, green: 0.32, blue: 0.64)
+        DualVibePalette.lightBar(for: colorScheme)
     }
 
     var body: some View {
@@ -289,8 +298,8 @@ private struct LauncherWheelView: View {
             if diameter > 0 {
                 compass(radius: radius)
                     .frame(width: diameter, height: diameter)
-                    .animation(reduceMotion ? nil : .smooth(duration: 0.23), value: selection.selected)
-                    .scaleEffect(selection.isPresented || reduceMotion ? 1 : 0.92)
+                    .animation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion), value: selection.selected)
+                    .scaleEffect(selection.isPresented || reduceMotion ? 1 : 0.87)
                     .opacity(selection.isPresented ? 1 : 0)
                     .allowsHitTesting(selection.isPresented)
                     .accessibilityHidden(!selection.isPresented)
@@ -312,6 +321,19 @@ private struct LauncherWheelView: View {
 
             ForEach(selection.entries) { entry in
                 sector(entry, radius: radius)
+            }
+
+            if selection.selected != nil {
+                LauncherWheelRimArc()
+                    .stroke(
+                        DualVibePalette.lightBarGradient(for: colorScheme),
+                        style: StrokeStyle(lineWidth: max(2.2, 2.8 * (radius / 140)), lineCap: .round)
+                    )
+                    .shadow(color: DualVibePalette.lightBarGlow(for: colorScheme), radius: 6)
+                    .rotationEffect(.radians(selection.indicatorAngle))
+                    .animation(DualVibeMotion.resolve(DualVibeMotion.glide, reduceMotion: reduceMotion), value: selection.indicatorAngle)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
 
             hub(radius: radius)
@@ -388,8 +410,11 @@ private struct LauncherWheelView: View {
             .frame(width: bounds.width, height: bounds.height)
             .contentShape(shape)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DualVibeTactileButtonStyle(scale: 0.97))
         .disabled(!entry.enabled)
+        .onHover { hovering in
+            if hovering, entry.enabled { selection.select(entry.id) }
+        }
         .help(entry.title)
         .accessibilityLabel(entry.title)
         .accessibilityActivationPoint(activation)
@@ -402,13 +427,13 @@ private struct LauncherWheelView: View {
         let scale = radius / 140
         let width = radius * 0.75
         return VStack(spacing: 4 * scale) {
-            Text(selection.selectedEntry?.title ?? (selection.hasActions ? "快捷轮盘" : "添加动作"))
+            Text(selection.selectedEntry?.title ?? (selection.hasActions ? L("快捷轮盘", "Quick Wheel") : L("添加动作", "Add Actions")))
                 .font(.system(size: max(10, 12 * scale), weight: .semibold))
                 .lineLimit(1)
                 .padding(.horizontal, 7)
                 .contentTransition(reduceMotion ? .identity : .opacity)
             if selection.hasActions {
-                Text("× 执行  ○ 取消")
+                Text(L("× 执行  ○ 取消", "× Run  ○ Close"))
                     .font(.system(size: max(8, 9 * scale), weight: .medium))
                     .foregroundStyle(.secondary)
             }
@@ -434,10 +459,40 @@ private struct LauncherWheelView: View {
         }
         .frame(width: width, height: width)
         .background {
-            glass(Circle())
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+            ZStack {
+                glass(Circle())
+                if selection.selected != nil {
+                    VStack {
+                        Capsule()
+                            .fill(activeInk)
+                            .frame(width: max(3, 3.5 * scale), height: max(6, 8 * scale))
+                            .shadow(color: DualVibePalette.lightBarGlow(for: colorScheme), radius: 3)
+                        Spacer()
+                    }
+                    .padding(4 * scale)
+                    .rotationEffect(.radians(selection.indicatorAngle))
+                    .animation(DualVibeMotion.resolve(DualVibeMotion.glide, reduceMotion: reduceMotion), value: selection.indicatorAngle)
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
+    }
+}
+
+private struct LauncherWheelRimArc: Shape {
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2 * 0.995
+        guard radius > 0 else { return Path() }
+        let angle = -Double.pi / 2
+        let half = LauncherWheelGeometry.step / 2 - 0.085
+        var path = Path()
+        path.addArc(center: center, radius: radius,
+                    startAngle: .radians(angle - half),
+                    endAngle: .radians(angle + half),
+                    clockwise: false)
+        return path
     }
 }
 

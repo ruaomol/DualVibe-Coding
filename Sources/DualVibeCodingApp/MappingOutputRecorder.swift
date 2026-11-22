@@ -35,16 +35,19 @@ struct MappingOutputRecorder: View {
     let binding: MappingBinding
     let onRecord: (RecordedMappingOutput) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: 8) {
             if binding.action == .shortcut, let shortcut = binding.shortcut {
-                Text(shortcut.title)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                DualVibeKeycap(text: shortcut.title, prominent: true)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.92).combined(with: .opacity))
             }
             MappingOutputRecorderControl(onRecord: onRecord)
-                .frame(width: 152, height: 24)
+                .frame(width: 136, height: 24)
         }
+        .animation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion),
+                   value: binding.shortcut?.title)
     }
 }
 
@@ -54,6 +57,7 @@ private struct MappingOutputRecorderControl: NSViewRepresentable {
     func makeNSView(context: Context) -> MappingOutputRecorderButton {
         let button = MappingOutputRecorderButton()
         button.bezelStyle = .rounded
+        button.controlSize = .regular
         button.target = button
         button.action = #selector(MappingOutputRecorderButton.toggleRecording)
         button.resetAppearance()
@@ -62,6 +66,7 @@ private struct MappingOutputRecorderControl: NSViewRepresentable {
 
     func updateNSView(_ button: MappingOutputRecorderButton, context: Context) {
         button.onRecord = onRecord
+        button.refreshIdleTitleIfNeeded()
     }
 
     static func dismantleNSView(_ button: MappingOutputRecorderButton, coordinator: ()) {
@@ -80,8 +85,15 @@ private final class MappingOutputRecorderButton: NSButton {
     private var pendingModifier: RecordedShortcut?
 
     func resetAppearance() {
-        title = "录入输出…"
-        toolTip = "录入键盘快捷键、左键单击／双击／长按，或鼠标右键、中键"
+        title = L("录入快捷键…", "Record Input…")
+        bezelColor = nil
+        contentTintColor = nil
+        toolTip = L("录入键盘快捷键、左键单击／双击／长按，或鼠标右键、中键",
+                    "Record keyboard shortcut, left click/double-click/long press, or right/middle click")
+    }
+
+    func refreshIdleTitleIfNeeded() {
+        if monitor == nil { resetAppearance() }
     }
 
     @objc func toggleRecording() {
@@ -93,17 +105,14 @@ private final class MappingOutputRecorderButton: NSButton {
 
         Self.activeRecorder?.stopRecording()
         Self.activeRecorder = self
-        title = "按键盘或鼠标…"
-        toolTip = "在此窗口内按下键盘或点击鼠标。在录入按钮上点左键可取消。"
+        title = L("等待键盘或鼠标…", "Press Key / Mouse…")
+        bezelColor = .controlAccentColor
+        toolTip = L("在此窗口内按下键盘或点击鼠标。再次点击按钮可取消。",
+                    "Press a key or click the mouse in this window. Click again to cancel.")
 
         let types: NSEvent.EventTypeMask = [.keyDown, .flagsChanged, .leftMouseDown, .leftMouseUp, .rightMouseDown, .otherMouseDown]
         monitor = NSEvent.addLocalMonitorForEvents(matching: types) { [weak self] event in
             guard let self, let window = self.window, NSApp.isActive, window.isKeyWindow,
-                  // A sheet can route key events through its parent window or
-                  // with no window attached. The recorder owns the key window,
-                  // so accept the complete keyboard sequence regardless of
-                  // that AppKit routing detail. Mouse events stay scoped to
-                  // the recorder window to keep its controls clickable.
                   (event.type == .keyDown || event.type == .flagsChanged || event.window === window)
             else { return event }
 

@@ -32,7 +32,10 @@ final class ControllerStore: ObservableObject {
     @Published var isMouseMode = true {
         didSet {
             UserDefaults.standard.set(isMouseMode, forKey: "mappingsEnabled")
-            if oldValue != isMouseMode { cancelOutput() }
+            if oldValue != isMouseMode {
+                cancelOutput()
+                updateRealtimeActivity()
+            }
         }
     }
     @Published var testMode = false {
@@ -84,10 +87,13 @@ final class ControllerStore: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var waitingForPrivacySettingsReturn = false
     private var permissionRefreshAfterSettings: Task<Void, Never>?
-    private var mouseTimer: Timer?
+    private var stickTimer: DispatchSourceTimer?
+    private var lastStickTickAt: TimeInterval?
     private var batteryTimer: Timer?
     private var pointer = PointerMotion()
-    private var pointerPost: Task<Void, Never>?
+    private var pointerTimer: DispatchSourceTimer?
+    private var realtimeActivity: NSObjectProtocol?
+    private let eventSource = CGEventSource(stateID: .hidSystemState)
     private lazy var displayBounds = Self.activeDisplayBounds()
     private var leftStick = CGPoint.zero
     private var rightStick = CGPoint.zero
@@ -164,16 +170,31 @@ final class ControllerStore: ObservableObject {
         observeDisplays()
         bluetoothBridge.start()
         refreshControllers()
-
+        updateRealtimeActivity()
     }
 
     deinit {
         permissionRefreshAfterSettings?.cancel()
-        pointerPost?.cancel()
+        pointerTimer?.cancel()
         mouseReleaseTask?.cancel()
-        mouseTimer?.invalidate()
+        stickTimer?.cancel()
         batteryTimer?.invalidate()
+        if let realtimeActivity { ProcessInfo.processInfo.endActivity(realtimeActivity) }
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
+    }
+
+    private func updateRealtimeActivity() {
+        let shouldKeepResponsive = connected && isMouseMode
+        if shouldKeepResponsive {
+            guard realtimeActivity == nil else { return }
+            realtimeActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical],
+                reason: "Real-time DualSense controller pointer, click, and shortcut mapping"
+            )
+        } else if let activity = realtimeActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            realtimeActivity = nil
+        }
     }
 
     private var needsContinuousStickOutput: Bool {
@@ -194,17 +215,28 @@ final class ControllerStore: ObservableObject {
     }
 
     private func startStickTimer() {
-        guard mouseTimer == nil else { return }
-        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+        guard stickTimer == nil else { return }
+        lastStickTickAt = ProcessInfo.processInfo.systemUptime
+        let timer = DispatchSource.makeTimerSource(flags: .strict, queue: .main)
+        timer.schedule(deadline: .now() + .nanoseconds(8_333_333),
+                       repeating: .nanoseconds(8_333_333),
+                       leeway: .nanoseconds(1_000_000))
+        timer.setEventHandler { [weak self] in
             MainActor.assumeIsolated { self?.tickStickOutput() }
         }
-        mouseTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
+        stickTimer = timer
+        timer.resume()
     }
 
     private func stopStickTimer() {
-        mouseTimer?.invalidate()
-        mouseTimer = nil
+        stickTimer?.cancel()
+        stickTimer = nil
+        lastStickTickAt = nil
+    }
+
+    private func cancelPointerTimer() {
+        pointerTimer?.cancel()
+        pointerTimer = nil
     }
 
     func mapping(_ id: String) -> ButtonMapping? { mappings.first { $0.id == id } }
@@ -408,7 +440,13 @@ final class ControllerStore: ObservableObject {
         observers.append(NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.cancelOutput() }
+            MainActor.assumeIsolated {
+                self?.cancelOutput()
+                if let activity = self?.realtimeActivity {
+                    ProcessInfo.processInfo.endActivity(activity)
+                    self?.realtimeActivity = nil
+                }
+            }
         })
     }
 
@@ -532,6 +570,7 @@ final class ControllerStore: ObservableObject {
         if let fallback { attach(fallback) }
         lastInput = id == nil ? "手柄已断开" : "等待所选手柄输入"
         updatePermissions()
+        updateRealtimeActivity()
     }
 
     private func attach(_ device: GCController) {
@@ -673,7 +712,8 @@ final class ControllerStore: ObservableObject {
 
         let newPhysicalButtons = newButtons.sorted()
         let projectedDirections = isLauncherActive ? newAxes.sorted() : []
-        if !newPhysicalButtons.isEmpty || !projectedDirections.isEmpty {
+        if (!newPhysicalButtons.isEmpty || !projectedDirections.isEmpty),
+           (isLauncherActive || isEditingMapping || NSApp.isActive) {
             let inputs = newPhysicalButtons.map { id in
                 id == "touchpad" ? touch.pressedMappingID ?? id : id
             }
@@ -733,9 +773,10 @@ final class ControllerStore: ObservableObject {
     }
 
     private func markInput(_ id: String) {
-        activeInput = id
-        if let row = mapping(id) { lastInput = row.name }
-        if followHardwareSelection, !isEditingMapping, !isLauncherActive, NSApp.isActive {
+        guard NSApp.isActive || testMode || isEditingMapping else { return }
+        if activeInput != id { activeInput = id }
+        if let row = mapping(id), lastInput != row.name { lastInput = row.name }
+        if followHardwareSelection, !isEditingMapping, !isLauncherActive, NSApp.isActive, selectedMappingID != id {
             selectedMappingID = id
         }
     }
@@ -800,7 +841,7 @@ final class ControllerStore: ObservableObject {
     private func press(_ id: String) {
         markInput(id)
         // Shoulders are visible on both faces and must not replace a turn request from the same report.
-        if ButtonMapping.physicalButtonIDs.contains(id), id != "l1", id != "r1" {
+        if NSApp.isActive, ButtonMapping.physicalButtonIDs.contains(id), id != "l1", id != "r1" {
             lastPhysicalPress = PhysicalPress(id: id)
         }
         guard let row = mapping(id) else { return }
@@ -988,8 +1029,7 @@ final class ControllerStore: ObservableObject {
         precisionSources.removeAll()
         if !voiceSources.isEmpty { microphone.endSystemInput() }
         voiceSources.removeAll()
-        pointerPost?.cancel()
-        pointerPost = nil
+        cancelPointerTimer()
         pointer.discardPending()
         releaseMouse()
         pointer = PointerMotion()
@@ -1049,8 +1089,12 @@ final class ControllerStore: ObservableObject {
     }
 
     private func tickStickOutput() {
+        let now = ProcessInfo.processInfo.systemUptime
+        let dt = lastStickTickAt.map { min(max(now - $0, 1.0 / 240.0), 1.0 / 24.0) } ?? (1.0 / 120.0)
+        lastStickTickAt = now
+        let frameScale = CGFloat(dt * 60.0)
+
         if !fallbackControllers.isEmpty {
-            let now = ProcessInfo.processInfo.systemUptime
             if now - lastBatteryCheck >= 2 {
                 lastBatteryCheck = now
                 refreshFallbackBattery()
@@ -1065,7 +1109,7 @@ final class ControllerStore: ObservableObject {
             let length = hypot(value.x, value.y)
             guard length > 0.14, let binding = mapping(id)?[.tap],
                   eligible(binding, for: id, gesture: .tap) else { continue }
-            let scale = pow(min(1, (length - 0.14) / 0.86), 1.4) / length
+            let scale = pow(min(1, (length - 0.14) / 0.86), 1.4) / length * frameScale
             applyMovement(binding.action, dx: value.x * scale, dy: value.y * scale, isTouch: false)
         }
     }
@@ -1085,7 +1129,7 @@ final class ControllerStore: ObservableObject {
                 touchScrollRemainder = CGPoint(x: horizontal - CGFloat(x), y: vertical - CGFloat(y))
             }
             guard x != 0 || y != 0 else { return }
-            let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+            let event = CGEvent(scrollWheelEvent2Source: eventSource, units: .pixel, wheelCount: 2,
                                 wheel1: y, wheel2: x, wheel3: 0)
             if isTouch { event?.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1) }
             event?.post(tap: .cghidEventTap)
@@ -1207,19 +1251,22 @@ final class ControllerStore: ObservableObject {
         let displays = displayBounds
         pointer.add(CGPoint(x: dx, y: dy), at: now, displays: displays, readCursor: Self.readCursor)
         guard let delay = pointer.timeUntilPost(at: now) else { return }
-        if delay == 0 {
+        if delay <= 0.0005 {
             flushCursorMotion()
-        } else if pointerPost == nil {
-            pointerPost = Task { [weak self] in
-                do { try await Task.sleep(for: .seconds(delay)) } catch { return }
-                self?.flushCursorMotion()
+        } else if pointerTimer == nil {
+            let timer = DispatchSource.makeTimerSource(flags: .strict, queue: .main)
+            timer.schedule(deadline: .now() + .nanoseconds(Int(delay * 1_000_000_000)),
+                           leeway: .nanoseconds(1_000_000))
+            timer.setEventHandler { [weak self] in
+                MainActor.assumeIsolated { self?.flushCursorMotion() }
             }
+            pointerTimer = timer
+            timer.resume()
         }
     }
 
     private func flushCursorMotion() {
-        pointerPost?.cancel()
-        pointerPost = nil
+        cancelPointerTimer()
         guard outputEnabled, canPostSystemEvents else {
             pointer.discardPending()
             return
@@ -1338,8 +1385,7 @@ final class ControllerStore: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                self.pointerPost?.cancel()
-                self.pointerPost = nil
+                self.cancelPointerTimer()
                 self.pointer = PointerMotion()
                 self.displayBounds = Self.activeDisplayBounds()
             }
@@ -1356,8 +1402,8 @@ final class ControllerStore: ObservableObject {
 
     private func sendMouse(_ type: CGEventType, button: CGMouseButton, at point: CGPoint? = nil,
                            count: Int = 1, eventNumber: Int64? = nil) {
-        guard canPostSystemEvents, let point = point ?? CGEvent(source: nil)?.location,
-              let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button) else { return }
+        guard canPostSystemEvents, let point = point ?? CGEvent(source: eventSource)?.location,
+              let event = CGEvent(mouseEventSource: eventSource, mouseType: type, mouseCursorPosition: point, mouseButton: button) else { return }
         event.setIntegerValueField(.mouseEventClickState, value: Int64(count))
         if let eventNumber { event.setIntegerValueField(.mouseEventNumber, value: eventNumber) }
         event.post(tap: .cghidEventTap)
@@ -1366,7 +1412,7 @@ final class ControllerStore: ObservableObject {
     private func sendShortcut(_ shortcut: RecordedShortcut) {
         guard canPostSystemEvents else { return }
         for pressed in [true, false] {
-            let event = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.code, keyDown: pressed)
+            let event = CGEvent(keyboardEventSource: eventSource, virtualKey: shortcut.code, keyDown: pressed)
             event?.flags = CGEventFlags(rawValue: shortcut.flags)
             event?.post(tap: .cghidEventTap)
         }

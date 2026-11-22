@@ -11,13 +11,35 @@ enum SidebarSection: String, CaseIterable, Identifiable {
     case permissions = "权限"
 
     var id: String { rawValue }
+
+    @MainActor
+    var localizedTitle: String {
+        switch self {
+        case .launcher: return L("启动台", "Launcher")
+        case .mapping: return L("按键映射", "Mappings")
+        case .combos: return L("组合键", "Combos")
+        case .devices: return L("连接与语音", "Devices & Voice")
+        case .permissions: return L("权限", "Permissions")
+        }
+    }
+
     var symbol: String {
         switch self {
-        case .launcher: return "square.grid.2x2"
+        case .launcher: return "square.grid.2x2.fill"
         case .mapping: return "slider.horizontal.3"
         case .combos: return "command"
-        case .devices: return "mic.and.signal.meter"
-        case .permissions: return "checkmark.shield"
+        case .devices: return "mic.fill"
+        case .permissions: return "checkmark.shield.fill"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .launcher: return Color(red: 0.34, green: 0.33, blue: 0.84)
+        case .mapping: return Color(red: 0.04, green: 0.48, blue: 0.98)
+        case .combos: return Color(red: 0.66, green: 0.30, blue: 0.86)
+        case .devices: return Color(red: 0.12, green: 0.66, blue: 0.82)
+        case .permissions: return Color(red: 0.20, green: 0.76, blue: 0.35)
         }
     }
 }
@@ -95,7 +117,7 @@ final class UIState: ObservableObject {
         }
 
         DispatchQueue.main.async {
-            for window in NSApp.windows where window.title == "DualVibe Coding" {
+            for window in NSApp.windows where !(window is NSPanel) && window.contentView != nil {
                 window.appearanceSource = nil
                 window.appearance = NSAppearance(named: resolved)
                 window.displayIfNeeded()
@@ -125,11 +147,20 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    @MainActor
     var title: String {
         switch self {
-        case .system: return "跟随系统"
-        case .light: return "浅色"
-        case .dark: return "深色"
+        case .system: return L("跟随系统", "Follow System")
+        case .light: return L("浅色", "Light")
+        case .dark: return L("深色", "Dark")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .system: return "circle.lefthalf.filled"
+        case .light: return "sun.max"
+        case .dark: return "moon.stars"
         }
     }
 
@@ -154,7 +185,7 @@ final class DualVibeApplicationDelegate: NSObject, NSApplicationDelegate {
 
     private func restoreMainWindow() {
         DispatchQueue.main.async {
-            guard let window = NSApp.windows.first(where: { $0.title == "DualVibe Coding" }) else { return }
+            guard let window = NSApp.windows.first(where: { !($0 is NSPanel) && $0.contentView != nil }) else { return }
             if window.isMiniaturized { window.deminiaturize(nil) }
             window.orderFrontRegardless()
             window.makeKey()
@@ -164,26 +195,37 @@ final class DualVibeApplicationDelegate: NSObject, NSApplicationDelegate {
 
 struct AppShellView: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var ui: UIState
     @ObservedObject var launcher: ApplicationLaunchStore
     @ObservedObject var wheel: LauncherWheelStore
     @Binding var appearance: AppAppearance
 
+    private var permissionsNeedAttention: Bool {
+        !store.canPostSystemEvents || (!store.inputMonitoringTrusted && !store.bluetoothBridge.canAccessBluetooth)
+    }
+
     var body: some View {
+        let _ = i18n.language
         NavigationSplitView {
             List(selection: $ui.selection) {
-                Section("工作台") {
+                Section(L("工作台", "Workspace")) {
                     sidebarItem(.launcher)
                     sidebarItem(.mapping)
                     sidebarItem(.combos)
                 }
-                Section("设备与权限") {
+                Section(L("设备与权限", "Device & Permissions")) {
                     sidebarItem(.devices)
                     sidebarItem(.permissions)
                 }
             }
             .listStyle(.sidebar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                sidebarFooter
+            }
+            .navigationSplitViewColumnWidth(min: 200, ideal: 218, max: 252)
             .navigationTitle("DualVibe Coding")
         } detail: {
             Group {
@@ -194,11 +236,17 @@ struct AppShellView: View {
                     MappingWorkspaceView(showMappingEditor: $ui.showMappingEditor,
                                          applications: launcher.applications.filter(\.usesOwnMappings),
                                          selectProfile: { ui.selectProfile($0, store: store) })
-                case .combos: CombosView(showMappingEditor: $ui.showMappingEditor)
-                case .devices: DevicesView()
-                case .permissions: PermissionsView(bridge: store.bluetoothBridge)
+                case .combos:
+                    CombosView(showMappingEditor: $ui.showMappingEditor)
+                case .devices:
+                    DevicesView()
+                case .permissions:
+                    PermissionsView(bridge: store.bluetoothBridge)
                 }
             }
+            .id("\(ui.selection?.rawValue ?? "mapping")-\(i18n.language.rawValue)")
+            .transition(reduceMotion ? .identity : .opacity)
+            .animation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion), value: ui.selection)
             .frame(minWidth: 850, minHeight: 650)
             .toolbar {
                 if ui.selection == .combos {
@@ -208,27 +256,31 @@ struct AppShellView: View {
                         }
                     }
                 }
-                ToolbarItem(placement: .automatic) { ConnectionStatus() }
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .automatic) {
+                    ConnectionStatus(onOpenDevices: { ui.selection = .devices })
+                }
+                ToolbarItem(placement: .automatic) {
                     Menu {
-                        Picker("外观", selection: $appearance) {
+                        Picker(L("外观", "Appearance"), selection: $appearance) {
                             ForEach(AppAppearance.allCases) { option in
-                                Text(option.title).tag(option)
+                                Label(option.title, systemImage: option.symbol).tag(option)
                             }
                         }
                     } label: {
-                        Label("外观", systemImage: "circle.lefthalf.filled")
+                        Image(systemName: appearance.symbol)
+                            .contentTransition(.symbolEffect(.replace))
                     }
-                    .help("切换外观")
+                    .help(L("切换外观（当前：\(appearance.title)）", "Switch Appearance (\(appearance.title))"))
+                    .accessibilityLabel(L("切换外观", "Switch Appearance"))
                 }
             }
         }
         .sheet(isPresented: $ui.showMappingEditor) { MappingEditorView() }
-        .alert("无法启动应用", isPresented: Binding(
+        .alert(L("无法启动应用", "Unable to Open App"), isPresented: Binding(
             get: { launcher.launchError != nil },
             set: { if !$0 { launcher.launchError = nil } }
         )) {
-            Button("好") { launcher.launchError = nil }
+            Button(L("好", "OK")) { launcher.launchError = nil }
         } message: {
             Text(launcher.launchError ?? "")
         }
@@ -236,36 +288,110 @@ struct AppShellView: View {
         .onChange(of: appearance, initial: true) { _, option in ui.updateAppearance(option) }
     }
 
+    @ViewBuilder
     private func sidebarItem(_ section: SidebarSection) -> some View {
-        Label(section.rawValue, systemImage: section.symbol).tag(section)
+        let isSelected = (ui.selection ?? .mapping) == section
+        HStack(spacing: 9) {
+            DualVibeSidebarIcon(systemImage: section.symbol, tint: section.tint, isSelected: isSelected)
+            Text(section.localizedTitle)
+                .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if section == .combos, !store.combos.isEmpty {
+                Text("\(store.combos.count)")
+                    .font(.caption2.monospacedDigit().weight(.semibold))
+                    .foregroundStyle(isSelected ? .white.opacity(0.92) : .secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 1.5)
+                    .background(isSelected ? Color.white.opacity(0.22) : Color.primary.opacity(0.08), in: Capsule())
+            } else if section == .permissions, permissionsNeedAttention {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(isSelected ? .white : .orange)
+                    .accessibilityLabel(L("需要授权", "Permission Required"))
+            }
+        }
+        .padding(.vertical, 2.5)
+        .tag(section)
+    }
+
+    private var sidebarFooter: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.6)
+            Button {
+                ui.selection = .devices
+            } label: {
+                HStack(spacing: 10) {
+                    DualVibeControlIcon(mappingID: "ps", size: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let device = store.activeControllerDevice {
+                            Text(device.name)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                            HStack(spacing: 4) {
+                                Text(store.isMouseMode ? L("映射已启用", "Mapping On") : L("映射已暂停", "Paused"))
+                                Text("·")
+                                Text(device.batteryText).monospacedDigit()
+                            }
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        } else {
+                            Text(L("未连接手柄", "No Controller"))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.secondary)
+                            Text(L("连接 DualSense 自动识别", "Connect DualSense to start"))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(L("查看 DualSense 连接与语音设置", "View DualSense connection and voice settings"))
+        }
+        .background(.ultraThinMaterial.opacity(0.55))
     }
 
     private var launcherWorkspace: some View {
         Group {
             if ui.showsWheelEditor {
-                LauncherWheelEditor(wheel: wheel, launcher: launcher)
+                LauncherWheelEditor(wheel: wheel, launcher: launcher) {
+                    ui.presentLauncher(store: store, launcher: launcher, wheel: wheel)
+                }
+                .transition(reduceMotion ? .identity : .opacity)
             } else {
                 LauncherView(launcher: launcher, onEditMapping: { application in
                     ui.selectProfile(application.profileID, store: store)
                     ui.selection = .mapping
                 })
+                .transition(reduceMotion ? .identity : .opacity)
             }
         }
-        .navigationTitle("启动台")
+        .animation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion), value: ui.showsWheelEditor)
+        .navigationTitle(L("启动台", "Launcher"))
         .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Picker("启动台页面", selection: $ui.showsWheelEditor) {
-                    Text("快捷轮盘").tag(true)
-                    Text("应用库").tag(false)
+            ToolbarItem(placement: .principal) {
+                Picker(L("启动台页面", "Launcher Mode"), selection: $ui.showsWheelEditor) {
+                    Text(L("快捷轮盘", "Quick Wheel")).tag(true)
+                    Text(L("应用库", "App Library")).tag(false)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .frame(width: 196)
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("打开轮盘", systemImage: "circle.dotted") {
+                Button {
                     ui.presentLauncher(store: store, launcher: launcher, wheel: wheel)
+                } label: {
+                    Label(L("预览轮盘", "Preview Wheel"), systemImage: "viewfinder.circle")
                 }
-                .help("打开快捷轮盘")
+                .help(L("弹出快捷轮盘预览", "Open floating Quick Wheel preview"))
             }
         }
     }
@@ -273,8 +399,12 @@ struct AppShellView: View {
 
 struct ConnectionStatus: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
+    @Environment(\.colorScheme) private var colorScheme
+    var onOpenDevices: (() -> Void)? = nil
 
     var body: some View {
+        let _ = i18n.language
         if store.controllerDevices.count > 1 {
             Menu {
                 ForEach(store.controllerDevices) { device in
@@ -284,26 +414,51 @@ struct ConnectionStatus: View {
                     }
                 }
             } label: {
-                currentDevice
+                statusPill
             }
-            .accessibilityLabel("切换手柄")
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel(L("切换手柄", "Switch Controller"))
         } else {
-            currentDevice
+            Button {
+                onOpenDevices?()
+            } label: {
+                statusPill
+            }
+            .buttonStyle(.plain)
+            .help(store.activeControllerDevice.map { "\($0.name) · \($0.transport.localizedTitle)" }
+                  ?? L("前往「连接与语音」查看手柄连接状态", "Open Devices & Voice to view controller status"))
         }
     }
 
-    private var currentDevice: some View {
-        HStack(spacing: 8) {
+    private var statusPill: some View {
+        HStack(spacing: 6) {
             if let device = store.activeControllerDevice {
-                Text(device.name).lineLimit(1)
-                    .accessibilityValue(device.transport.title)
+                Image(systemName: "gamecontroller.fill")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(DualVibePalette.lightBar(for: colorScheme))
+                Text(device.name)
+                    .font(.caption.weight(.medium))
+                    .lineLimit(1)
+                    .accessibilityValue(device.transport.localizedTitle)
                 DeviceBatteryIndicator(device: device)
             } else {
-                Label("未连接手柄", systemImage: "battery.0percent")
+                Image(systemName: "gamecontroller")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Text(L("未连接", "Disconnected"))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             }
         }
-        .font(.caption)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(DualVibePalette.elevatedFill(for: colorScheme), in: Capsule())
+        .overlay {
+            Capsule()
+                .strokeBorder(DualVibePalette.hairlineBorder(for: colorScheme), lineWidth: 0.6)
+                .allowsHitTesting(false)
+        }
         .accessibilityElement(children: .combine)
     }
 }
@@ -322,11 +477,12 @@ private extension ControllerDevice {
         }
     }
 
-    var batteryStatus: String {
+    @MainActor
+    var localizedBatteryStatus: String {
         switch batteryState {
-        case .charging: return "充电中"
-        case .full: return "已充满"
-        case .discharging, .unknown: return battery == nil ? "电量未知" : ""
+        case .charging: return L("充电中", "Charging")
+        case .full: return L("已充满", "Full")
+        case .discharging, .unknown: return battery == nil ? L("电量未知", "Battery Unknown") : ""
         }
     }
 }
@@ -339,14 +495,17 @@ private struct DeviceBatteryIndicator: View {
         HStack(spacing: 4) {
             Image(systemName: device.batterySymbol)
                 .foregroundStyle(symbolColor)
+                .contentTransition(.symbolEffect(.replace))
             Text(device.batteryText)
                 .monospacedDigit()
-            if showsStatus, !device.batteryStatus.isEmpty {
-                Text(device.batteryStatus)
+                .contentTransition(.numericText())
+            if showsStatus, !device.localizedBatteryStatus.isEmpty {
+                Text(device.localizedBatteryStatus)
             }
         }
+        .font(.caption)
         .foregroundStyle(.secondary)
-        .accessibilityLabel("\(device.batteryText) \(device.batteryStatus)")
+        .accessibilityLabel("\(device.batteryText) \(device.localizedBatteryStatus)")
     }
 
     private var symbolColor: Color {
@@ -358,64 +517,167 @@ private struct DeviceBatteryIndicator: View {
 
 struct DevicesView: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var isCustomSpeed: Bool {
+        abs(store.cursorSpeed - 1.0) > 0.01 || abs(store.scrollSpeed - 1.0) > 0.01
+    }
 
     var body: some View {
+        let _ = i18n.language
         Form {
-            Section("手柄") {
+            Section {
                 if store.controllerDevices.isEmpty {
-                    Label("等待连接手柄", systemImage: "gamecontroller")
-                        .foregroundStyle(.secondary)
-                }
-                ForEach(store.controllerDevices) { device in
-                    HStack(spacing: 12) {
-                        Image(systemName: "gamecontroller")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 22)
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(device.name).font(.headline)
-                            Text(device.transport.title).font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 14) {
+                        DualVibeIconBadge(systemImage: "gamecontroller", tint: .secondary, size: 36, cornerRadius: 10)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(L("等待连接 DualSense 手柄", "Waiting for DualSense Controller"))
+                                .font(.headline)
+                            Text(L("通过 USB-C 连接或在 macOS 蓝牙中配对后将自动识别，支持多手柄无缝切换。",
+                                   "Connect via USB-C or pair in macOS Bluetooth. Multiple controllers can switch seamlessly."))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        Spacer()
-                        DeviceBatteryIndicator(device: device, showsStatus: true)
-                        if device.id == store.selectedControllerID {
-                            Label("当前", systemImage: "checkmark")
-                                .foregroundStyle(Color.accentColor)
-                                .font(.caption.weight(.semibold))
-                        } else {
-                            Button("切换") { store.selectController(id: device.id) }
+                        Spacer(minLength: 10)
+                        Button(L("蓝牙设置…", "Bluetooth Settings…")) {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.BluetoothSettings") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.vertical, 6)
+                } else {
+                    ForEach(store.controllerDevices) { device in
+                        let isActive = device.id == store.selectedControllerID
+                        let accent = DualVibePalette.lightBar(for: colorScheme)
+                        HStack(spacing: 12) {
+                            if isActive {
+                                DualVibeLightBar(orientation: .vertical, length: 28, thickness: 2.5)
+                            }
+                            DualVibeIconBadge(
+                                systemImage: "gamecontroller.fill",
+                                tint: isActive ? accent : .secondary,
+                                size: 34,
+                                cornerRadius: 9
+                            )
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(device.name)
+                                    .font(.headline)
+                                HStack(spacing: 6) {
+                                    Text(device.transport.localizedTitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Text("·")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                    DeviceBatteryIndicator(device: device, showsStatus: true)
+                                }
+                            }
+                            Spacer()
+                            if isActive {
+                                DualVibeStatusBadge(text: L("当前使用", "Active"), systemImage: "checkmark", tone: .accent)
+                            } else {
+                                Button(L("切换使用", "Use")) {
+                                    withAnimation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion)) {
+                                        store.selectController(id: device.id)
+                                    }
+                                }
+                                .buttonStyle(.bordered)
                                 .controlSize(.small)
-                                .accessibilityLabel("切换到\(device.name)")
+                                .accessibilityLabel(L("切换到\(device.name)", "Switch to \(device.name)"))
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
+            } header: {
+                Text(L("DualSense 手柄", "DualSense Controllers"))
             }
 
             DeviceMicrophoneSection()
 
-            Section("指针与滚动") {
-                Slider(value: $store.cursorSpeed, in: 0.2...2.0) { Text("光标灵敏度") }
-                Slider(value: $store.scrollSpeed, in: 0.2...2.0) { Text("滚动灵敏度") }
+            Section {
+                LabeledContent {
+                    HStack(spacing: 12) {
+                        Slider(value: $store.cursorSpeed, in: 0.2...2.0, step: 0.05)
+                            .frame(maxWidth: 260)
+                        Text(String(format: "%.2f×", store.cursorSpeed))
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .contentTransition(.numericText())
+                            .frame(width: 46, alignment: .trailing)
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("光标灵敏度", "Cursor Sensitivity"))
+                        Text(L("控制摇杆与触控板移动指针的速度", "Pointer speed for analog sticks and touchpad"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                LabeledContent {
+                    HStack(spacing: 12) {
+                        Slider(value: $store.scrollSpeed, in: 0.2...2.0, step: 0.05)
+                            .frame(maxWidth: 260)
+                        Text(String(format: "%.2f×", store.scrollSpeed))
+                            .font(.callout.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .contentTransition(.numericText())
+                            .frame(width: 46, alignment: .trailing)
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("滚动灵敏度", "Scroll Sensitivity"))
+                        Text(L("控制右摇杆与双指滑动的页面滚动速度", "Scroll speed for right stick and two-finger drag"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if isCustomSpeed {
+                    HStack {
+                        Spacer()
+                        Button(L("恢复默认灵敏度", "Reset to Default")) {
+                            withAnimation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion)) {
+                                store.cursorSpeed = 1.0
+                                store.scrollSpeed = 1.0
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                    .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+                }
+            } header: {
+                Text(L("指针与滚动", "Pointer & Scrolling"))
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("连接与语音")
+        .navigationTitle(L("连接与语音", "Devices & Voice"))
+        .animation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion), value: store.controllerDevices)
+        .animation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion), value: isCustomSpeed)
     }
 }
 
 struct MappingProfilePicker: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
     let applications: [LauncherApplication]
     let select: (String) -> Void
 
     var body: some View {
-        Picker("映射配置", selection: Binding(get: { store.activeProfile }, set: select)) {
-            Section("全局配置") {
+        let _ = i18n.language
+        Picker(L("映射配置", "Mapping Profile"), selection: Binding(get: { store.activeProfile }, set: select)) {
+            Section(L("全局配置", "Global Profiles")) {
                 Text("Vibe Coding").tag("vibe")
-                Text("桌面导航").tag("desktop")
+                Text(L("桌面导航", "Desktop Navigation")).tag("desktop")
             }
             if !applications.isEmpty {
-                Section("App 专用") {
+                Section(L("App 专用", "Per-App Profiles")) {
                     ForEach(applications) { application in
                         Text(application.name).tag(application.profileID)
                     }
@@ -423,26 +685,30 @@ struct MappingProfilePicker: View {
             }
         }
         .labelsHidden()
-        .frame(width: 148)
-        .help("选择要编辑的映射配置")
+        .frame(width: 152)
+        .help(L("选择要编辑的映射配置", "Select mapping profile to edit"))
     }
 }
 
 struct PermissionsView: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
     @ObservedObject var bridge: DualSenseBluetoothBridge
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var inputAvailable: Bool { store.inputMonitoringTrusted || bridge.canAccessBluetooth }
 
+    private var allReady: Bool { store.canPostSystemEvents && inputAvailable }
+
     private var inputStatus: String {
-        if store.inputMonitoringTrusted { return "已授权" }
-        if bridge.canAccessBluetooth { return "HID 可用" }
-        return store.inputMonitoringAuthorization == .denied ? "未开启" : "待授权"
+        if store.inputMonitoringTrusted { return L("已授权", "Granted") }
+        if bridge.canAccessBluetooth { return L("HID 可用", "HID Ready") }
+        return store.inputMonitoringAuthorization == .denied ? L("未开启", "Disabled") : L("待授权", "Required")
     }
 
     private var outputStatus: String {
-        if store.canPostSystemEvents { return store.accessibilityTrusted ? "已授权" : "输出可用" }
-        return store.accessibilityTrusted ? "输出未就绪" : "待授权"
+        if store.canPostSystemEvents { return store.accessibilityTrusted ? L("已授权", "Granted") : L("输出可用", "Ready") }
+        return store.accessibilityTrusted ? L("输出未就绪", "Not Ready") : L("待授权", "Required")
     }
 
     private var showsSetupHelp: Bool {
@@ -450,27 +716,104 @@ struct PermissionsView: View {
     }
 
     var body: some View {
+        let _ = i18n.language
         Form {
-            Section("macOS 权限") {
+            Section {
+                HStack(spacing: 14) {
+                    DualVibeIconBadge(
+                        systemImage: allReady ? "checkmark.shield.fill" : "exclamationmark.shield.fill",
+                        tint: allReady ? .green : .orange,
+                        size: 38,
+                        cornerRadius: 10
+                    )
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(allReady
+                             ? L("所有系统权限已就绪", "All macOS Permissions Ready")
+                             : L("需要完成 macOS 权限授权", "macOS Permissions Required"))
+                            .font(.headline)
+                        Text(allReady
+                             ? L("DualVibe Coding 可以正常读取 DualSense 输入并发送系统光标与快捷键事件。",
+                                 "DualVibe Coding can read DualSense input and post cursor and keyboard events.")
+                             : L("开启下方权限后，即可通过 DualSense 控制系统光标、快捷键与蓝牙音频。",
+                                 "Enable the permissions below to control pointer, shortcuts, and Bluetooth audio."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 10)
+                    Button {
+                        store.refreshPermissions()
+                    } label: {
+                        Label(L("重新检查", "Recheck"), systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.vertical, 6)
+            }
+
+            Section(L("macOS 系统权限", "macOS Permissions")) {
                 outputRow
                 inputRow
-                permissionActions
             }
+
+            Section(L("应用语言", "Language")) {
+                HStack(spacing: 12) {
+                    DualVibeIconBadge(systemImage: "globe", tint: .blue, size: 32, cornerRadius: 8)
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        Text(L("界面语言", "Interface Language"))
+                            .font(.headline)
+                        Text(L("立即切换简体中文或英文界面，无需重启应用",
+                               "Switch between Simplified Chinese and English instantly"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 10)
+                    Picker(L("界面语言", "Interface Language"), selection: $i18n.language) {
+                        ForEach(AppLanguage.allCases) { option in
+                            Text(option.label).tag(option)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(width: 156)
+                }
+                .padding(.vertical, 4)
+            }
+
             if showsSetupHelp {
-                Section {
-                    Text("列表里没有 DualVibe Coding 时，点「+」并选择当前 App。开关已开但检查仍未通过时，移除旧条目，再添加当前 App。")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                Section(L("授权排查说明", "Troubleshooting")) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label {
+                            Text(L("列表里没有 DualVibe Coding 时，点击系统设置底部的「+」并选择当前 App。如果开关已打开但检查仍未通过，请先移除旧条目，再重新添加当前 App。",
+                                   "If DualVibe Coding is missing from the list, click “+” in System Settings and select this app. If enabled yet still unverified, remove the old entry and add it again."))
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        } icon: {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack {
+                            Spacer()
+                            Button {
+                                NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+                            } label: {
+                                Label(L("在访达中显示当前 App", "Show App in Finder"), systemImage: "folder")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
         }
         .formStyle(.grouped)
-        .padding(28)
-        .navigationTitle("权限")
+        .navigationTitle(L("权限", "Permissions"))
+        .animation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion), value: allReady)
     }
 
     private var outputRow: some View {
-        PermissionRow(title: "辅助功能", detail: "控制系统光标、鼠标和快捷键",
+        PermissionRow(title: L("辅助功能", "Accessibility"),
+                      detail: L("控制系统光标、鼠标点击与全局快捷键", "Control cursor, mouse clicks, and global shortcuts"),
+                      icon: "accessibility", tint: .blue,
                       status: outputStatus, available: store.canPostSystemEvents,
                       showsRequest: !store.canPostSystemEvents,
                       request: { store.requestOutputAuthorization() },
@@ -478,29 +821,21 @@ struct PermissionsView: View {
     }
 
     private var inputRow: some View {
-        PermissionRow(title: "输入监控", detail: "读取 DualSense 蓝牙 HID",
+        PermissionRow(title: L("输入监控", "Input Monitoring"),
+                      detail: L("读取 DualSense 蓝牙与 USB HID 按键及触控板信号", "Read DualSense Bluetooth & USB HID buttons and touchpad"),
+                      icon: "gamecontroller.fill", tint: .indigo,
                       status: inputStatus, available: inputAvailable,
                       showsRequest: !store.inputMonitoringTrusted,
                       request: { store.requestInputAuthorization() },
                       openSettings: { store.openInputMonitoringSettings() })
-    }
-
-    private var permissionActions: some View {
-        HStack {
-            Button("重新检查") { store.refreshPermissions() }
-            if showsSetupHelp {
-                Button("在访达中显示当前 App") {
-                    NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
-                }
-            }
-        }
-        .controlSize(.small)
     }
 }
 
 private struct PermissionRow: View {
     let title: String
     let detail: String
+    let icon: String
+    let tint: Color
     let status: String
     let available: Bool
     let showsRequest: Bool
@@ -509,21 +844,29 @@ private struct PermissionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
+            DualVibeIconBadge(systemImage: icon, tint: tint, size: 32, cornerRadius: 8)
+            VStack(alignment: .leading, spacing: 2.5) {
                 Text(title).font(.headline)
                 Text(detail).font(.caption).foregroundStyle(.secondary)
             }
-            Spacer()
-            Label(status, systemImage: available ? "checkmark.circle.fill" : "exclamationmark.circle")
-                .font(.caption)
-                .foregroundStyle(available ? Color.green : Color.secondary)
+            Spacer(minLength: 8)
+            DualVibeStatusBadge(
+                text: status,
+                systemImage: available ? "checkmark.circle.fill" : "exclamationmark.circle",
+                tone: available ? .positive : .warning
+            )
             if showsRequest {
-                Button("申请授权…", action: request)
-                    .accessibilityLabel("申请\(title)授权")
+                Button(L("申请授权…", "Request…"), action: request)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .accessibilityLabel(L("申请\(title)授权", "Request \(title)"))
             }
-            Button("打开设置", action: openSettings)
-                .accessibilityLabel("打开\(title)设置")
+            Button(L("打开设置", "Open Settings"), action: openSettings)
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .accessibilityLabel(L("打开\(title)设置", "Open \(title) Settings"))
         }
+        .padding(.vertical, 4)
     }
 }
 
@@ -534,6 +877,7 @@ struct DualVibeCodingApp: App {
     @StateObject private var ui = UIState()
     @StateObject private var launcher = ApplicationLaunchStore()
     @StateObject private var wheel = LauncherWheelStore()
+    @ObservedObject private var i18n = LocalizationStore.shared
     @AppStorage("dualVibeAppearance") private var appearance = AppAppearance.system
 
     var body: some Scene {
@@ -541,6 +885,7 @@ struct DualVibeCodingApp: App {
             AppShellView(ui: ui, launcher: launcher, wheel: wheel, appearance: $appearance)
                 .environmentObject(store)
                 .environmentObject(store.microphone)
+                .environmentObject(i18n)
                 .preferredColorScheme(appearance.scheme)
         } defaultValue: {
             "main"

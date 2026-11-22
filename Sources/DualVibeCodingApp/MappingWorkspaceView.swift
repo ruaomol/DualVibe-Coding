@@ -3,12 +3,15 @@ import SwiftUI
 
 struct MappingWorkspaceView: View {
     @EnvironmentObject private var store: ControllerStore
+    @EnvironmentObject private var i18n: LocalizationStore
     @Binding var showMappingEditor: Bool
     let applications: [LauncherApplication]
     let selectProfile: (String) -> Void
     @StateObject private var previewState = ControllerPreviewState()
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Namespace private var variantNamespace
 
     private var face: ControllerFace { previewState.face }
 
@@ -27,9 +30,9 @@ struct MappingWorkspaceView: View {
     }
 
     var body: some View {
+        let _ = i18n.language
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                header
+            VStack(alignment: .leading, spacing: 16) {
                 board
                 if let family = selectedFamily, let mapping = mappingsByID[store.selectedMappingID] {
                     inspector(family: family, mapping: mapping, mappings: mappingsByID,
@@ -37,10 +40,34 @@ struct MappingWorkspaceView: View {
                 }
             }
             .frame(maxWidth: 1220)
-            .padding(24)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
             .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .navigationTitle(L("按键映射", "Mappings"))
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                MappingProfilePicker(applications: applications, select: selectProfile)
+            }
+            ToolbarItem(placement: .automatic) {
+                Toggle(isOn: Binding(
+                    get: { store.isMouseMode },
+                    set: { enabled in
+                        if enabled != store.isMouseMode { store.toggleMouseMode() }
+                    }
+                )) {
+                    Text(L("启用映射", "Enable Mapping"))
+                        .font(.callout)
+                }
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .help(L("开启或暂停全局手柄按键映射", "Enable or pause global DualSense mappings"))
+            }
+        }
+        .animation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion), value: store.selectedMappingID)
+        .animation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion), value: store.testMode)
+        .animation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion), value: previewState.isCapturing)
         .onChange(of: store.lastPhysicalPress) { _, press in
             guard let press,
                   let side = families.first(where: { $0.mappingIDs.contains(press.id) })?.preferredFace else { return }
@@ -61,21 +88,6 @@ struct MappingWorkspaceView: View {
         .onDisappear { stopCapture() }
     }
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Text("按键映射").font(.title.weight(.semibold))
-            Spacer(minLength: 4)
-            MappingProfilePicker(applications: applications, select: selectProfile)
-            Toggle("启用自定义映射", isOn: Binding(
-                get: { store.isMouseMode },
-                set: { enabled in
-                    if enabled != store.isMouseMode { store.toggleMouseMode() }
-                }
-            ))
-            .toggleStyle(.switch)
-        }
-    }
-
     private var board: some View {
         let mappings = mappingsByID
         let conflicts = MappingConflicts(store.mappings)
@@ -83,11 +95,11 @@ struct MappingWorkspaceView: View {
             previewToolbar
             Divider()
             ControllerBoardLayout {
-                rail("左侧按键", lane: .left, mappings: mappings, conflicts: conflicts)
+                rail(L("左侧按键", "Left Controls"), lane: .left, mappings: mappings, conflicts: conflicts)
                 preview
-                rail("右侧按键", lane: .right, mappings: mappings, conflicts: conflicts)
+                rail(L("右侧按键", "Right Controls"), lane: .right, mappings: mappings, conflicts: conflicts)
             }
-            .padding(14)
+            .padding(16)
             .overlayPreferenceValue(BoardAnchorsKey.self) { anchors in
                 GeometryReader { coordinateSpace in
                     if let photo = anchors[.photo] {
@@ -108,8 +120,15 @@ struct MappingWorkspaceView: View {
                 }
             }
         }
-        .background(.quaternary.opacity(0.28), in: RoundedRectangle(cornerRadius: 14))
-        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.quaternary).allowsHitTesting(false) }
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.regularMaterial)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(DualVibePalette.hairlineBorder(for: colorScheme), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
     }
 
     private func previewHotspots(size: CGSize, mappings: [String: ButtonMapping]) -> [ControllerFace: [PreviewHotspot]] {
@@ -158,11 +177,13 @@ struct MappingWorkspaceView: View {
 
     private func rail(_ title: String, lane: ControlLane, mappings: [String: ButtonMapping],
                       conflicts: MappingConflicts) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                .padding(.leading, 4)
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 6)
             let columnFamilies = families.filter { $0.lane == lane }
-            VStack(spacing: 0) {
+            VStack(spacing: 1) {
                 ForEach(columnFamilies) { family in
                     let isSelected = family.id == selectedFamily?.id
                     let mapping = (isSelected ? mappings[store.selectedMappingID] : nil)
@@ -170,53 +191,62 @@ struct MappingWorkspaceView: View {
                         ?? family.mappingIDs.compactMap { mappings[$0] }.first
                     if let mapping {
                         MappingControlRow(
-                            title: family.variants.isEmpty ? mapping.name : family.title,
+                            title: family.variants.isEmpty ? mapping.localizedName : family.localizedTitle,
                             symbol: family.symbol,
                             mapping: mapping,
                             isSelected: isSelected,
                             isActive: store.testMode && family.mappingIDs.contains(store.activeInput ?? ""),
                             hasConflict: family.mappingIDs.contains { conflicts.hasConflict(for: $0) },
-                            conflicts: conflicts
-                        ) {
-                            select(mapping.id, from: family)
-                        }
+                            conflicts: conflicts,
+                            onSelect: { select(mapping.id, from: family) },
+                            onEdit: {
+                                select(mapping.id, from: family)
+                                showMappingEditor = true
+                            }
+                        )
                         .anchorPreference(key: BoardAnchorsKey.self, value: .bounds) { [.row(family.id): $0] }
                         if family.id != columnFamilies.last?.id {
-                            Divider().padding(.horizontal, 8)
+                            Divider().padding(.horizontal, 10).opacity(0.6)
                         }
                     }
                 }
             }
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
-            .overlay { RoundedRectangle(cornerRadius: 9).strokeBorder(.quaternary).allowsHitTesting(false) }
+            .padding(3)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(DualVibePalette.hairlineBorder(for: colorScheme), lineWidth: 0.8)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private var previewToolbar: some View {
         HStack(spacing: 10) {
-            Picker("手柄视角", selection: Binding(get: { face }, set: showFace)) {
-                Text("正面").tag(ControllerFace.front)
-                Text("背面").tag(ControllerFace.rear)
+            Picker(L("手柄视角", "Controller View"), selection: Binding(get: { face }, set: showFace)) {
+                Text(L("正面", "Front")).tag(ControllerFace.front)
+                Text(L("背面", "Rear")).tag(ControllerFace.rear)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 116)
+            .frame(width: 126)
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 8)
+
             if store.testMode {
-                Text(store.lastInput)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .accessibilityLabel("最近输入：\(store.lastInput)")
+                DualVibeStatusBadge(text: store.lastInput, systemImage: "waveform", tone: .positive)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.92).combined(with: .opacity))
+                    .accessibilityLabel(L("最近输入：\(store.lastInput)", "Last input: \(store.lastInput)"))
             }
+
             Toggle(isOn: $store.testMode) {
-                Label("测试输入", systemImage: "waveform.path")
+                Label(L("测试输入", "Test Input"), systemImage: "waveform.path")
             }
             .toggleStyle(.button)
             .controlSize(.small)
-            .help("暂时暂停映射输出，观察手柄输入")
+            .help(L("暂时暂停映射输出，观察实体手柄输入", "Pause mapping output to inspect physical controller input"))
+
             Button {
                 if previewState.isCapturing {
                     stopCapture()
@@ -225,28 +255,39 @@ struct MappingWorkspaceView: View {
                     previewState.isCapturing = true
                 }
             } label: {
-                Label(previewState.isCapturing ? "按下手柄键…" : "录入手柄键",
-                      systemImage: previewState.isCapturing ? "record.circle.fill" : "gamecontroller")
+                Label(
+                    previewState.isCapturing ? L("按下手柄键…", "Press Button…") : L("录入手柄键", "Capture Button"),
+                    systemImage: previewState.isCapturing ? "gamecontroller.fill" : "gamecontroller"
+                )
+                .contentTransition(.symbolEffect(.replace))
             }
+            .buttonStyle(.bordered)
+            .tint(previewState.isCapturing ? DualVibePalette.lightBar(for: colorScheme) : nil)
             .controlSize(.small)
             .disabled(!store.connected)
-            .help(previewState.isCapturing ? "取消录入" : "按下实体按键，打开对应的映射编辑器")
+            .help(previewState.isCapturing
+                  ? L("取消录入", "Cancel capture")
+                  : L("按下实体按键，直接打开对应的映射编辑器", "Press any physical button to open its mapping editor"))
+
             Menu {
-                Toggle("按下手柄时选中映射", isOn: $store.followHardwareSelection)
+                Toggle(L("按下手柄时选中映射", "Select Control on Press"), isOn: $store.followHardwareSelection)
                 Divider()
-                Button("恢复当前配置默认值…", role: .destructive) { previewState.confirmsRestore = true }
+                Button(L("恢复当前配置默认值…", "Restore Default Mappings…"), role: .destructive) { previewState.confirmsRestore = true }
             } label: {
                 Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .accessibilityLabel("预览选项")
+            .accessibilityLabel(L("预览选项", "Preview Options"))
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .confirmationDialog("恢复当前配置的默认映射？", isPresented: $previewState.confirmsRestore, titleVisibility: .visible) {
-            Button("恢复默认", role: .destructive) { store.restoreDefaults() }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .confirmationDialog(L("恢复当前配置的默认映射？", "Restore default mappings for this profile?"),
+                            isPresented: $previewState.confirmsRestore, titleVisibility: .visible) {
+            Button(L("恢复默认", "Restore Defaults"), role: .destructive) { store.restoreDefaults() }
         }
     }
 
@@ -260,71 +301,110 @@ struct MappingWorkspaceView: View {
 
     private func inspector(family: ControllerControlFamily, mapping: ButtonMapping,
                            mappings: [String: ButtonMapping], conflicts: MappingConflicts) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 8) {
-                Image(systemName: family.symbol)
-                    .foregroundStyle(Color.accentColor)
-                    .accessibilityHidden(true)
-                Text(mapping.name).font(.headline).lineLimit(1)
-                Spacer(minLength: 6)
-                Button("编辑映射…") { showMappingEditor = true }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+        let accent = DualVibePalette.lightBar(for: colorScheme)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 11) {
+                DualVibeControlIcon(mappingID: mapping.id, size: 38)
+                VStack(alignment: .leading, spacing: 1.5) {
+                    Text(mapping.localizedName)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .contentTransition(.numericText())
+                    Text(L("点击任意动作卡片或按钮编辑此按键映射", "Click any action tile or button to edit this control"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    showMappingEditor = true
+                } label: {
+                    Label(L("编辑映射…", "Edit Mapping…"), systemImage: "slider.horizontal.3")
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
             }
 
             let options = family.mappingIDs.compactMap { mappings[$0] }
             if options.count > 1 {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 6)], alignment: .leading, spacing: 6) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 118), spacing: 6)], alignment: .leading, spacing: 6) {
                     ForEach(options) { option in
+                        let isSelectedOption = option.id == mapping.id
                         let hasConflict = conflicts.hasConflict(for: option.id)
                         Button {
                             select(option.id, from: family)
                         } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: option.id == mapping.id ? "smallcircle.filled.circle" : "circle")
-                                    .foregroundStyle(option.id == mapping.id ? Color.accentColor : Color.secondary)
-                                    .accessibilityHidden(true)
-                                Text(family.id == "touchpad" ? String(option.name.dropFirst("触控板".count)) : option.name)
+                            HStack(spacing: 6) {
+                                Text(family.id == "touchpad" ? option.localizedShortTouchName : option.localizedName)
+                                    .font(.caption.weight(isSelectedOption ? .semibold : .medium))
+                                    .foregroundStyle(isSelectedOption ? accent : Color.primary)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.85)
                                 Spacer(minLength: 0)
                                 if hasConflict {
-                                    Image(systemName: "exclamationmark.circle.fill")
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.caption2)
                                         .foregroundStyle(.red)
                                         .accessibilityHidden(true)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(6)
-                            .contentShape(Rectangle())
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6.5)
+                            .background {
+                                if isSelectedOption {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(accent.opacity(colorScheme == .dark ? 0.20 : 0.12))
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .strokeBorder(accent.opacity(0.45), lineWidth: 1)
+                                        }
+                                        .matchedGeometryEffect(id: "variant-\(family.id)", in: variantNamespace)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(DualVibePalette.elevatedFill(for: colorScheme))
+                                }
+                            }
+                            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         }
-                        .buttonStyle(.plain)
-                        .font(.caption)
-                        .background(option.id == mapping.id ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04),
-                                    in: RoundedRectangle(cornerRadius: 6))
-                        .accessibilityLabel(option.name)
-                        .accessibilityHint(hasConflict ? "有映射冲突" : "")
-                        .accessibilityAddTraits(option.id == mapping.id ? [.isSelected] : [])
-                        .help(store.title(for: option, gesture: .tap))
+                        .buttonStyle(DualVibeTactileButtonStyle(scale: 0.98))
+                        .accessibilityLabel(option.localizedName)
+                        .accessibilityHint(hasConflict ? L("有映射冲突", "Mapping conflict") : "")
+                        .accessibilityAddTraits(isSelectedOption ? [.isSelected] : [])
+                        .help(store.localizedTitle(for: option, gesture: .tap))
                     }
                 }
             }
-            HStack(spacing: 8) {
+
+            HStack(spacing: 10) {
                 ForEach(mapping.editableGestures) { gesture in
-                    MappingGestureTile(title: mapping.gestureTitle(gesture),
-                                       value: store.title(for: mapping, gesture: gesture),
-                                       conflict: conflicts.reason(for: mapping.id, gesture: gesture))
+                    MappingGestureTile(
+                        title: mapping.localizedGestureTitle(gesture),
+                        value: store.localizedTitle(for: mapping, gesture: gesture),
+                        isConfigured: mapping[gesture].isConfigured,
+                        isShortcut: mapping[gesture].action == .shortcut && mapping[gesture].shortcut != nil,
+                        conflict: conflicts.reason(for: mapping.id, gesture: gesture),
+                        action: { showMappingEditor = true }
+                    )
                 }
             }
         }
-        .padding(14)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
-        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary).allowsHitTesting(false) }
+        .padding(16)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(DualVibePalette.hairlineBorder(for: colorScheme), lineWidth: 0.9)
+                .allowsHitTesting(false)
+        }
     }
 
     private func select(_ id: String, from family: ControllerControlFamily) {
         guard mappingsByID[id] != nil else { return }
-        store.selectedMappingID = id
+        withAnimation(DualVibeMotion.resolve(DualVibeMotion.snappy, reduceMotion: reduceMotion)) {
+            store.selectedMappingID = id
+        }
         if let side = family.preferredFace { showFace(side) }
     }
 
@@ -340,7 +420,7 @@ struct MappingWorkspaceView: View {
 }
 
 private struct ControllerBoardLayout: Layout {
-    private let spacing: CGFloat = 15
+    private let spacing: CGFloat = 16
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? 950
@@ -373,6 +453,10 @@ private struct ControllerBoardLayout: Layout {
 
 private struct MappingControlRow: View {
     @EnvironmentObject private var store: ControllerStore
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var hover = DualVibeHoverState()
+
     let title: String
     let symbol: String
     let mapping: ButtonMapping
@@ -380,7 +464,8 @@ private struct MappingControlRow: View {
     let isActive: Bool
     let hasConflict: Bool
     let conflicts: MappingConflicts
-    let select: () -> Void
+    let onSelect: () -> Void
+    let onEdit: () -> Void
 
     private var summaryGesture: GestureKind? {
         mapping.editableGestures.first { conflicts.reason(for: mapping.id, gesture: $0) != nil }
@@ -388,72 +473,167 @@ private struct MappingControlRow: View {
     }
 
     var body: some View {
-        Button(action: select) {
-            HStack(spacing: 8) {
-                Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                Text(title)
-                    .font(.subheadline.weight(isSelected ? .semibold : .medium))
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Spacer(minLength: 0)
-                if let gesture = summaryGesture {
-                    Text(store.title(for: mapping, gesture: gesture))
-                        .font(.caption)
-                        .lineLimit(1)
-                        .foregroundStyle(conflicts.reason(for: mapping.id, gesture: gesture) == nil ? Color.secondary : .red)
-                }
-                if hasConflict {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                        .accessibilityLabel("有映射冲突")
-                } else if isActive {
-                    Circle().fill(.green)
-                        .frame(width: 5, height: 5)
-                        .accessibilityLabel("收到输入")
-                }
+        let accent = DualVibePalette.lightBar(for: colorScheme)
+        HStack(spacing: 8) {
+            if isSelected {
+                DualVibeLightBar(orientation: .vertical, length: 16, thickness: 2.5)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.4, anchor: .center).combined(with: .opacity))
+            } else {
+                Color.clear.frame(width: 2.5, height: 16)
             }
-            .padding(.horizontal, 9)
-            .frame(height: 34)
-            .contentShape(Rectangle())
-            .background(isSelected ? Color.accentColor.opacity(0.12) : .clear,
-                        in: RoundedRectangle(cornerRadius: 6))
-            .padding(.horizontal, 2)
-            .padding(.vertical, 1)
+
+            Image(systemName: symbol)
+                .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? accent : (isActive ? .green : .secondary))
+                .frame(width: 17)
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(.subheadline.weight(isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? Color.primary : Color.primary.opacity(0.88))
+                .lineLimit(1)
+                .layoutPriority(1)
+
+            Spacer(minLength: 4)
+
+            if let gesture = summaryGesture {
+                Text(store.localizedTitle(for: mapping, gesture: gesture))
+                    .font(.caption)
+                    .lineLimit(1)
+                    .foregroundStyle(conflicts.reason(for: mapping.id, gesture: gesture) == nil ? Color.secondary : .red)
+            }
+
+            if hasConflict {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel("有映射冲突")
+            } else if isActive {
+                Image(systemName: "bolt.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.green)
+                    .accessibilityLabel("收到输入")
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .padding(.leading, 6)
+        .padding(.trailing, 10)
+        .frame(height: 35)
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(rowBackground(accent: accent))
+        }
+        .overlay {
+            if isActive {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.green.opacity(0.65), lineWidth: 1)
+                    .allowsHitTesting(false)
+            } else if isSelected {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(accent.opacity(0.26), lineWidth: 0.8)
+                    .allowsHitTesting(false)
+            }
+        }
+        .onHover { hovering in
+            withAnimation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion)) {
+                hover.isHovered = hovering
+            }
+        }
+        .onTapGesture(count: 2) { onEdit() }
+        .onTapGesture(count: 1) { onSelect() }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityAction { onSelect() }
+        .help("单击选中，双击编辑「\(title)」")
+    }
+
+    private func rowBackground(accent: Color) -> Color {
+        if isActive { return Color.green.opacity(colorScheme == .dark ? 0.16 : 0.10) }
+        if isSelected { return accent.opacity(colorScheme == .dark ? 0.18 : 0.11) }
+        if hover.isHovered { return DualVibePalette.elevatedFill(for: colorScheme) }
+        return .clear
     }
 }
 
 private struct MappingGestureTile: View {
     let title: String
     let value: String
+    let isConfigured: Bool
+    let isShortcut: Bool
     let conflict: String?
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var hover = DualVibeHoverState()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            HStack(spacing: 5) {
-                if conflict != nil {
-                    Image(systemName: "exclamationmark.circle.fill").accessibilityHidden(true)
+        let isHovered = hover.isHovered
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(title)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .opacity(isHovered ? 1 : 0.45)
                 }
-                Text(value).lineLimit(1).minimumScaleFactor(0.85)
+
+                HStack(spacing: 6) {
+                    if conflict != nil {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .accessibilityHidden(true)
+                    }
+                    if isShortcut && conflict == nil {
+                        DualVibeKeycap(text: value, prominent: true)
+                    } else {
+                        Text(value)
+                            .font(.subheadline.weight(isConfigured ? .semibold : .regular))
+                            .foregroundStyle(conflict != nil ? Color.red : (isConfigured ? Color.primary : Color.secondary))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                }
             }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(conflict == nil ? Color.primary : .red)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(tileFill)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(tileBorder, lineWidth: isHovered ? 1 : 0.7)
+                    .allowsHitTesting(false)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(conflict == nil ? Color.primary.opacity(0.045) : .red.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 6))
-        .help(conflict ?? "\(title)：\(value)")
-        .accessibilityHint(conflict ?? "")
+        .buttonStyle(DualVibeTactileButtonStyle(scale: 0.985))
+        .onHover { hovering in
+            withAnimation(DualVibeMotion.resolve(DualVibeMotion.tactile, reduceMotion: reduceMotion)) {
+                hover.isHovered = hovering
+            }
+        }
+        .help(conflict ?? "\(title)：\(value)（点击编辑）")
+        .accessibilityHint(conflict ?? "点击编辑\(title)动作")
+    }
+
+    private var tileFill: Color {
+        if conflict != nil { return Color.red.opacity(colorScheme == .dark ? 0.16 : 0.09) }
+        if hover.isHovered { return DualVibePalette.lightBar(for: colorScheme).opacity(colorScheme == .dark ? 0.12 : 0.07) }
+        return DualVibePalette.elevatedFill(for: colorScheme)
+    }
+
+    private var tileBorder: Color {
+        if conflict != nil { return Color.red.opacity(0.45) }
+        if hover.isHovered { return DualVibePalette.lightBar(for: colorScheme).opacity(0.45) }
+        return DualVibePalette.hairlineBorder(for: colorScheme)
     }
 }
 
@@ -478,6 +658,21 @@ private struct ControllerControlFamily: Identifiable {
     var rear: [PhotoHotspot] = []
 
     var mappingIDs: [String] { [id] + variants }
+    @MainActor
+    var localizedTitle: String {
+        switch id {
+        case "dpad": return L("方向键", "D-Pad")
+        case "leftStick": return L("左摇杆", "Left Stick")
+        case "rightStick": return L("右摇杆", "Right Stick")
+        case "touchpad": return L("触控板", "Touchpad")
+        case "mute": return L("麦克风静音", "Mic Mute")
+        case "triangle": return L("三角键", "Triangle")
+        case "square": return L("方键", "Square")
+        case "circle": return L("圆键", "Circle")
+        case "cross": return L("叉键", "Cross")
+        default: return title
+        }
+    }
     var preferredFace: ControllerFace? {
         if rear.isEmpty { return .front }
         return front.isEmpty ? .rear : nil
@@ -493,9 +688,9 @@ private struct ControllerControlFamily: Identifiable {
     }
 
     static let all: [Self] = [
-        .init(id: "l2", title: "L2", symbol: "l2.rectangle.roundedtop", lane: .left,
+        .init(id: "l2", title: "L2", symbol: "l2.button.roundedtop.horizontal", lane: .left,
               rear: [.init("l2", 1149, 51, 219, 183, .trigger(mirrored: true))]),
-        .init(id: "l1", title: "L1", symbol: "l1.rectangle.roundedbottom", lane: .left,
+        .init(id: "l1", title: "L1", symbol: "l1.button.roundedbottom.horizontal", lane: .left,
               front: [.init("l1", 169, 12, 229, 78, .bumper(mirrored: false))],
               rear: [.init("l1", 1132, 17, 247, 78, .bumper(mirrored: true))]),
         .init(id: "create", title: "Create", symbol: "plus.square", lane: .left,
@@ -519,9 +714,9 @@ private struct ControllerControlFamily: Identifiable {
               front: [.init("mute", 723, 581, 90, 36, .capsule)]),
 
         // In the rear photograph, the user's right shoulder is on the left side of the image.
-        .init(id: "r2", title: "R2", symbol: "r2.rectangle.roundedtop", lane: .right,
+        .init(id: "r2", title: "R2", symbol: "r2.button.roundedtop.horizontal", lane: .right,
               rear: [.init("r2", 166, 51, 219, 183, .trigger(mirrored: false))]),
-        .init(id: "r1", title: "R1", symbol: "r1.rectangle.roundedbottom", lane: .right,
+        .init(id: "r1", title: "R1", symbol: "r1.button.roundedbottom.horizontal", lane: .right,
               front: [.init("r1", 1136, 12, 232, 79, .bumper(mirrored: true))],
               rear: [.init("r1", 157, 17, 247, 78, .bumper(mirrored: false))]),
         .init(id: "options", title: "Options", symbol: "line.3.horizontal", lane: .right,
@@ -537,7 +732,7 @@ private struct ControllerControlFamily: Identifiable {
         .init(id: "rightStick", title: "右摇杆", symbol: "r.joystick", lane: .right,
               variants: ["r3", "rightStickUp", "rightStickRight", "rightStickDown", "rightStickLeft"],
               front: [.init("r3", 909, 407, 220, 220, .circle)]),
-        .init(id: "ps", title: "PS", symbol: "house", lane: .right,
+        .init(id: "ps", title: "PS", symbol: "logo.playstation", lane: .right,
               front: [.init("ps", 709, 449, 119, 96, .capsule)])
     ]
 }
