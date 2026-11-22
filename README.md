@@ -15,13 +15,13 @@
 24 秒短片，直观展示 DualVibe Coding 如何把 PlayStation DualSense 变成随手操控 Mac、自由切换应用与流畅 Vibe Coding 的全新入口。
 
 <p align="center">
-  <a href="docs/assets/video/dualvibe-promo.mp4">
-    <img src="docs/assets/video/dualvibe-promo-cover.png" alt="DualVibe Coding 宣传视频封面" width="960">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases/download/v0.1.0/dualvibe-promo.mp4">
+    <img src="docs/assets/video/dualvibe-promo-preview.gif" alt="DualVibe Coding 24 秒宣传视频动图预览" width="760">
   </a>
 </p>
 
 <p align="center">
-  <a href="docs/assets/video/dualvibe-promo.mp4">点击封面观看完整视频</a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases/download/v0.1.0/dualvibe-promo.mp4">▶ 观看 / 下载 1080p 60fps 原画有声完整版（MP4）</a>
 </p>
 
 <p align="center">

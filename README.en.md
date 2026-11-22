@@ -15,13 +15,13 @@
 A 24-second film showing how DualVibe Coding turns PlayStation's DualSense into a natural way to steer your Mac, launch apps, and stay in flow while vibe coding.
 
 <p align="center">
-  <a href="docs/assets/video/dualvibe-promo.mp4">
-    <img src="docs/assets/video/dualvibe-promo-cover.png" alt="DualVibe Coding Promo Video Cover" width="960">
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases/download/v0.1.0/dualvibe-promo.mp4">
+    <img src="docs/assets/video/dualvibe-promo-preview.gif" alt="DualVibe Coding 24-Second Promo Animated Preview" width="760">
   </a>
 </p>
 
 <p align="center">
-  <a href="docs/assets/video/dualvibe-promo.mp4">Click cover to watch the full video</a>
+  <a href="https://github.com/ruaomol/DualVibe-Coding/releases/download/v0.1.0/dualvibe-promo.mp4">▶ Watch / Download Full 1080p 60fps Video with Audio (MP4)</a>
 </p>
 
 <p align="center">
