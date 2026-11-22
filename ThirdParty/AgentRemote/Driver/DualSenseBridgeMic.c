@@ -1958,15 +1958,15 @@ static OSStatus	NullAudio_GetDevicePropertyDataSize(AudioServerPlugInDriverRef i
 			switch(inAddress->mScope)
 			{
 				case kAudioObjectPropertyScopeGlobal:
-					*outDataSize = 8 * sizeof(AudioObjectID);
+					*outDataSize = 6 * sizeof(AudioObjectID);
 					break;
 					
 				case kAudioObjectPropertyScopeInput:
-					*outDataSize = 4 * sizeof(AudioObjectID);
+					*outDataSize = 3 * sizeof(AudioObjectID);
 					break;
 					
 				case kAudioObjectPropertyScopeOutput:
-					*outDataSize = 4 * sizeof(AudioObjectID);
+					*outDataSize = 3 * sizeof(AudioObjectID);
 					break;
 			};
 			break;
@@ -2029,7 +2029,7 @@ static OSStatus	NullAudio_GetDevicePropertyDataSize(AudioServerPlugInDriverRef i
 			break;
 
 		case kAudioObjectPropertyControlList:
-			*outDataSize = 7 * sizeof(AudioObjectID);
+			*outDataSize = 4 * sizeof(AudioObjectID);
 			break;
 
 		case kAudioDevicePropertySafetyOffset:
@@ -2162,51 +2162,67 @@ static OSStatus	NullAudio_GetDevicePropertyData(AudioServerPlugInDriverRef inDri
 			//	case, only that number of items will be returned
 			theNumberItemsToFetch = inDataSize / sizeof(AudioObjectID);
 			
-			//	The device owns its streams and controls. Note that what is returned here
-			//	depends on the scope requested.
+			//	The device owns its streams and volume/mute controls (without the sample
+			//	NullAudio dummy DataSource items that caused macOS Sound Settings to show
+			//	duplicate "Data Source Item 1/2/3" virtual microphones).
 			switch(inAddress->mScope)
 			{
 				case kAudioObjectPropertyScopeGlobal:
-					//	global scope means return all objects
-					if(theNumberItemsToFetch > 9)
+				{
+					static const AudioObjectID kGlobalObjects[6] = {
+						kObjectID_Stream_Input,
+						kObjectID_Volume_Input_Master,
+						kObjectID_Mute_Input_Master,
+						kObjectID_Stream_Output,
+						kObjectID_Volume_Output_Master,
+						kObjectID_Mute_Output_Master
+					};
+					if(theNumberItemsToFetch > 6)
 					{
-						theNumberItemsToFetch = 9;
+						theNumberItemsToFetch = 6;
 					}
-					
-					//	fill out the list with as many objects as requested, which is everything
 					for(theItemIndex = 0; theItemIndex < theNumberItemsToFetch; ++theItemIndex)
 					{
-						((AudioObjectID*)outData)[theItemIndex] = kObjectID_Stream_Input + theItemIndex;
+						((AudioObjectID*)outData)[theItemIndex] = kGlobalObjects[theItemIndex];
 					}
 					break;
+				}
 					
 				case kAudioObjectPropertyScopeInput:
-					//	input scope means just the objects on the input side
-					if(theNumberItemsToFetch > 4)
+				{
+					static const AudioObjectID kInputObjects[3] = {
+						kObjectID_Stream_Input,
+						kObjectID_Volume_Input_Master,
+						kObjectID_Mute_Input_Master
+					};
+					if(theNumberItemsToFetch > 3)
 					{
-						theNumberItemsToFetch = 4;
+						theNumberItemsToFetch = 3;
 					}
-					
-					//	fill out the list with the right objects
 					for(theItemIndex = 0; theItemIndex < theNumberItemsToFetch; ++theItemIndex)
 					{
-						((AudioObjectID*)outData)[theItemIndex] = kObjectID_Stream_Input + theItemIndex;
+						((AudioObjectID*)outData)[theItemIndex] = kInputObjects[theItemIndex];
 					}
 					break;
+				}
 					
 				case kAudioObjectPropertyScopeOutput:
-					//	output scope means just the objects on the output side
-					if(theNumberItemsToFetch > 4)
+				{
+					static const AudioObjectID kOutputObjects[3] = {
+						kObjectID_Stream_Output,
+						kObjectID_Volume_Output_Master,
+						kObjectID_Mute_Output_Master
+					};
+					if(theNumberItemsToFetch > 3)
 					{
-						theNumberItemsToFetch = 4;
+						theNumberItemsToFetch = 3;
 					}
-					
-					//	fill out the list with the right objects
 					for(theItemIndex = 0; theItemIndex < theNumberItemsToFetch; ++theItemIndex)
 					{
-						((AudioObjectID*)outData)[theItemIndex] = kObjectID_Stream_Output + theItemIndex;
+						((AudioObjectID*)outData)[theItemIndex] = kOutputObjects[theItemIndex];
 					}
 					break;
+				}
 			};
 			
 			//	report how much we wrote
@@ -2302,22 +2318,17 @@ static OSStatus	NullAudio_GetDevicePropertyData(AudioServerPlugInDriverRef inDri
 			break;
 
 		case kAudioDevicePropertyDeviceCanBeDefaultDevice:
-			//	This property returns whether or not the device wants to be able to be the
-			//	default device for content. This is the device that iTunes and QuickTime
-			//	will use to play their content on and FaceTime will use as it's microhphone.
-			//	Nearly all devices should allow for this.
+			//	Allow DualSense Bridge Mic to be selected as the default input microphone,
+			//	but never as the default output speaker.
 			FailWithAction(inDataSize < sizeof(UInt32), theAnswer = kAudioHardwareBadPropertySizeError, Done, "NullAudio_GetDevicePropertyData: not enough space for the return value of kAudioDevicePropertyDeviceCanBeDefaultDevice for the device");
-			*((UInt32*)outData) = 1;
+			*((UInt32*)outData) = (inAddress->mScope == kAudioObjectPropertyScopeInput) ? 1 : 0;
 			*outDataSize = sizeof(UInt32);
 			break;
 
 		case kAudioDevicePropertyDeviceCanBeDefaultSystemDevice:
-			//	This property returns whether or not the device wants to be the system
-			//	default device. This is the device that is used to play interface sounds and
-			//	other incidental or UI-related sounds on. Most devices should allow this
-			//	although devices with lots of latency may not want to.
+			//	Never hijack macOS system alert sounds onto the virtual mic loopback.
 			FailWithAction(inDataSize < sizeof(UInt32), theAnswer = kAudioHardwareBadPropertySizeError, Done, "NullAudio_GetDevicePropertyData: not enough space for the return value of kAudioDevicePropertyDeviceCanBeDefaultSystemDevice for the device");
-			*((UInt32*)outData) = 1;
+			*((UInt32*)outData) = 0;
 			*outDataSize = sizeof(UInt32);
 			break;
 
@@ -2390,31 +2401,25 @@ static OSStatus	NullAudio_GetDevicePropertyData(AudioServerPlugInDriverRef inDri
 			break;
 
 		case kAudioObjectPropertyControlList:
-			//	Calculate the number of items that have been requested. Note that this
-			//	number is allowed to be smaller than the actual size of the list. In such
-			//	case, only that number of items will be returned
+		{
+			static const AudioObjectID kControls[4] = {
+				kObjectID_Volume_Input_Master,
+				kObjectID_Mute_Input_Master,
+				kObjectID_Volume_Output_Master,
+				kObjectID_Mute_Output_Master
+			};
 			theNumberItemsToFetch = inDataSize / sizeof(AudioObjectID);
-			if(theNumberItemsToFetch > 7)
+			if(theNumberItemsToFetch > 4)
 			{
-				theNumberItemsToFetch = 7;
+				theNumberItemsToFetch = 4;
 			}
-			
-			//	fill out the list with as many objects as requested, which is everything
 			for(theItemIndex = 0; theItemIndex < theNumberItemsToFetch; ++theItemIndex)
 			{
-				if(theItemIndex < 3)
-				{
-					((AudioObjectID*)outData)[theItemIndex] = kObjectID_Volume_Input_Master + theItemIndex;
-				}
-				else
-				{
-					((AudioObjectID*)outData)[theItemIndex] = kObjectID_Volume_Output_Master + (theItemIndex - 3);
-				}
+				((AudioObjectID*)outData)[theItemIndex] = kControls[theItemIndex];
 			}
-			
-			//	report how much we wrote
 			*outDataSize = theNumberItemsToFetch * sizeof(AudioObjectID);
 			break;
+		}
 
 		case kAudioDevicePropertySafetyOffset:
 			//	This property returns the how close to now the HAL can read and write. For
