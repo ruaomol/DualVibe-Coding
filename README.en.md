@@ -38,7 +38,7 @@ A 24-second film showing how DualVibe Coding turns PlayStation's DualSense into 
 
 DualVibe Coding is a native macOS app that turns a DualSense into a precision mouse, keyboard, wireless microphone, and radial app launcher. It starts by making controller input immediately usable, then connects touchpad gestures, button mappings, combos, a radial wheel, and per-app setups.
 
-Built natively with SwiftUI and AppKit, DualVibe Coding supports light, dark, and system appearances, connects multiple DualSense controllers over Bluetooth or USB simultaneously, and shows live battery and charging status at a glance.
+Built natively with SwiftUI and AppKit, DualVibe Coding supports light, dark, and system appearances as well as instant **English / Simplified Chinese** language switching (available directly in **Permissions**). Its latency-critical anti-App Nap engine and 120Hz high-precision event scheduler keep pointer movement, clicks, and stick output smooth even while running in the background. Connect multiple DualSense controllers over Bluetooth or USB simultaneously and view live battery and charging status at a glance.
 
 ## DualVibe Coding, a Mac buddy
 
@@ -52,7 +52,7 @@ Connect your controller, customize mappings, open the radial wheel, and fire act
 
 ### Touchpad as a mouse
 
-Move the pointer, click, double-click, right-click, drag, scroll, and swipe across macOS Spaces. Stick output stays continuous while you hold buttons, keeping dragging and chords rock solid.
+Move the pointer, click, double-click, right-click, drag, scroll, and swipe across macOS Spaces. With 120Hz high-precision stick dispatch and background low-latency activity protection, clicks, dragging, and chords stay responsive without background stutter.
 
 <p align="center">
   <img src="docs/assets/screenshots/touchpad-mouse.png" alt="DualSense Touchpad Gestures" width="960">
@@ -146,7 +146,7 @@ Have questions or want to share your DualSense × Vibe Coding setup? Join the co
     <td align="center">
       <a href="docs/assets/community/dualvibe-coding-group.jpg"><img src="docs/assets/community/dualvibe-coding-group.jpg" alt="DualVibe Coding Community QR Code" width="240"></a><br>
       <strong>DualVibe Coding Group</strong><br>
-      Scan with WeChat to join
+      Scan with QQ to join
     </td>
   </tr>
 </table>

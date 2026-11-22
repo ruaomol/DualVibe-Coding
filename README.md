@@ -38,7 +38,7 @@
 
 DualVibe Coding 是一款为 macOS 原生打造的 DualSense 控制器应用，可以把 PS5 手柄变成鼠标、键盘、语音麦克风与八向应用启动器。它先让手柄输入开箱即用，再把触控板手势、全键位映射、组合键、快捷轮盘以及每个 App 自己的方案自然连在一起。
 
-DualVibe Coding 使用 SwiftUI 与 AppKit 原生开发，完整适配 macOS 原生控件与浅色、深色及跟随系统外观；支持蓝牙或 USB 同时连接多只 DualSense，顶部状态栏与侧边栏一眼可见当前设备、电量和充电状态。
+DualVibe Coding 使用 SwiftUI 与 AppKit 原生开发，完整适配 macOS 原生控件、**浅色 / 深色 / 跟随系统**外观与**简体中文 / English** 双语切换（可在「权限」页实时切换）；内置防 App Nap 后台降频与 120Hz 高精度事件调度，切到后台操作摇杆与鼠标左右键依然跟手稳定；支持蓝牙或 USB 同时连接多只 DualSense，顶部状态栏与侧边栏一眼可见当前设备、电量和充电状态。
 
 ## DualVibe Coding，Mac 好搭子
 
@@ -52,7 +52,7 @@ DualVibe Coding 使用 SwiftUI 与 AppKit 原生开发，完整适配 macOS 原�
 
 ### 触控板当鼠标
 
-移动、单击、双击、右键、拖拽、滚动，还可以直接双指左右滑动切换桌面。摇杆可以持续模拟输出，和按键同时按住时，拖拽和快捷键依然稳定不打断。
+移动、单击、双击、右键、拖拽、滚动，还可以直接双指左右滑动切换桌面。摇杆采用 120Hz 高精度定时分发与后台低延迟保活机制，切后台或与按键同时按住时，点击、拖拽和快捷键依然跟手稳定不卡顿。
 
 <p align="center">
   <img src="docs/assets/screenshots/touchpad-mouse.png" alt="DualSense 触控板手势映射" width="960">
@@ -192,7 +192,7 @@ DualVibe Coding 使用 [MIT License](LICENSE)。第三方组件的许可证和�
     <td align="center">
       <a href="docs/assets/community/dualvibe-coding-group.jpg"><img src="docs/assets/community/dualvibe-coding-group.jpg" alt="DualVibe Coding 交流群二维码" width="240"></a><br>
       <strong>DualVibe Coding 交流群</strong><br>
-      微信扫码加入交流
+      QQ 扫码加入交流
     </td>
   </tr>
 </table>
